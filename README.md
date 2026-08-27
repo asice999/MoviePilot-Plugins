@@ -37,3 +37,9 @@ plugins.v3/metafiller/__init__.py
 package.v3.json
 icons/
 ```
+
+## CloudSubscribe
+
+网盘订阅助手。支持搜索、订阅、洗版、转存与卡死种子清理。
+
+仓库地址：`https://github.com/asice999/MoviePilot-Plugins`

@@ -27,5 +27,19 @@
       "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
       "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
     }
+  },
+  "CloudSubscribe": {
+    "name": "网盘订阅助手",
+    "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
+    "labels": "网盘,订阅,搜索,洗版,Emby",
+    "version": "1.3.0",
+    "icon": "cloudsubscribe.svg",
+    "author": "asice999",
+    "level": 1,
+    "release": true,
+    "system_version": ">=3.0.0",
+    "history": {
+      "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
+    }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "MpMissingEpisodes": {
+    "name": "缺失剧集补齐",
+    "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
+    "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
+    "version": "1.0.0",
+    "icon": "mpmissingepisodes.png",
+    "author": "asice999",
+    "level": 1,
+    "release": true,
+    "system_version": ">=3.0.0",
+    "history": {
+      "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。"
+    }
+  }
+}

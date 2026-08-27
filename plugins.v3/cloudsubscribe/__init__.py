@@ -105,7 +105,7 @@ class CloudSubscribe(_PluginBase):
     """网盘订阅助手插件。"""
 
     # 插件名称
-    plugin_name = "网盘订阅助手"
+    plugin_name = "网盘订阅助手（自用）"
     # 插件描述
     plugin_desc = "整合网盘能力与多渠道资源搜索，自动查找并补充订阅缺失的影视内容。"
     # 插件图标
@@ -113,9 +113,9 @@ class CloudSubscribe(_PluginBase):
     # 插件版本
     plugin_version = "1.3.0"
     # 插件作者
-    plugin_author = "odomu"
+    plugin_author = "asice999"
     # 作者主页
-    author_url = "https://github.com/odomu"
+    author_url = "https://github.com/asice999"
     # 插件配置项ID前缀
     plugin_config_prefix = "cloudsubscribe_"
     plugin_order = 21

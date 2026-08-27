@@ -34,7 +34,7 @@ class MpMissingEpisodes(_PluginBase):
     扫描媒体库剧集缺失，自动搜索下载补齐
     """
     # 插件名称
-    plugin_name = "MpMissingEpisodes"
+    plugin_name = "缺失剧集补齐（自用）"
     # 插件描述
     plugin_desc = "定时扫描媒体库剧集缺失情况，自动搜索资源下载补齐。支持全库扫描或指定剧集（TMDB ID）"
     # 插件图标
@@ -42,9 +42,8 @@ class MpMissingEpisodes(_PluginBase):
     # 插件版本
     plugin_version = "1.0.0"
     # 插件作者
-    plugin_author = "Minis"
-    # 作者主页
-    author_url = ""
+    plugin_author = "asice999"
+    author_url = "https://github.com/asice999"
     # 插件配置项ID前缀
     plugin_config_prefix = "mp_missing_episodes."
     # 加载顺序

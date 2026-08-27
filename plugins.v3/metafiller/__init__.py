@@ -20,13 +20,13 @@ except Exception:
 class MetaFiller(_PluginBase):
     """缺失剧集元数据补全工具：扫描 Emby 缺标题/简介的剧集，从电视猫抓取补全。"""
 
-    plugin_name = "缺失剧集元数据补全"
+    plugin_name = "缺失剧集元数据补全（自用）"
     plugin_desc = "定时扫描 Emby 媒体库，找出缺失标题/简介的剧集，从电视猫抓取补全。"
     plugin_icon = "Emby_A.png"
     plugin_color = "#098663"
     plugin_version = "1.0.0"
-    plugin_author = "Minis"
-    author_url = "https://github.com/"
+    plugin_author = "asice999"
+    author_url = "https://github.com/asice999"
     plugin_config_prefix = "MetaFiller_"
 
     _enabled = False

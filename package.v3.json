@@ -1,6 +1,6 @@
 {
   "MpMissingEpisodes": {
-    "name": "缺失剧集补齐",
+    "name": "缺失剧集补齐（自用）",
     "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
     "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
     "version": "1.0.0",
@@ -14,7 +14,7 @@
     }
   },
   "MetaFiller": {
-    "name": "缺失剧集元数据补全",
+    "name": "缺失剧集元数据补全（自用）",
     "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
     "labels": "Emby,元数据,刮削,TMDB,缩略图",
     "version": "1.1.0",
@@ -29,7 +29,7 @@
     }
   },
   "CloudSubscribe": {
-    "name": "网盘订阅助手",
+    "name": "网盘订阅助手（自用）",
     "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
     "labels": "网盘,订阅,搜索,洗版,Emby",
     "version": "1.3.0",

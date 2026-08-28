@@ -21,10 +21,10 @@ class MetaFiller(_PluginBase):
     """缺失剧集元数据补全工具：扫描 Emby 缺标题/简介的剧集，从电视猫抓取补全。"""
 
     plugin_name = "缺失剧集元数据补全（自用）"
-    plugin_desc = "定时扫描 Emby 媒体库，找出缺失标题/简介的剧集，从电视猫抓取补全。"
+    plugin_desc = "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。"
     plugin_icon = "Emby_A.png"
     plugin_color = "#098663"
-    plugin_version = "1.2.0"
+    plugin_version = "1.3.0"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"
     plugin_config_prefix = "MetaFiller_"
@@ -40,8 +40,7 @@ class MetaFiller(_PluginBase):
     _max_series = 0
     _overwrite = False
     _fill_image = True
-    _notify = True
-    _prefer_cn_source = False
+    _dry_run = False
     _only_series = ""
     _timeout = 15
 

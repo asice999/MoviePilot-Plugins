@@ -38,7 +38,7 @@ class DoubanSubscribeProvider(SubscribeProvider):
     def fetch(self, options: dict, context: SubscribeContext) -> Iterator[MediaCandidate]:
         configured_base = options.get("rsshub_base") or options.get("rsshub_base_url")
         configured_base = str(configured_base or "").strip().rstrip("/")
-        base = configured_base or "https://rsshub.app"
+        base = configured_base or "https://rsshub.liumingye.cn"
         if not base.startswith(("http://", "https://")):
             base = f"https://{base}"
         configured_urls = options.get("rss_urls") or []

@@ -194,7 +194,7 @@ class ConfigApi(OwnerDelegator):
             return "已启用榜单代理，请先填写榜单代理地址"
         UIConfig.normalize_auto_subscribe_years(payload)
         service_urls = {
-            "auto_subscribe_douban_rsshub_base": "https://rsshub.app",
+            "auto_subscribe_douban_rsshub_base": "https://rsshub.liumingye.cn",
             "auto_subscribe_maoyan_base_url": "https://piaofang.maoyan.com",
             "auto_subscribe_netflix_base_url": "https://www.netflix.com",
         }

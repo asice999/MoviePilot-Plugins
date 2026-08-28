@@ -50,7 +50,7 @@ class UIConfig:
             "auto_subscribe_proxy_password": "",
             "auto_subscribe_douban_enabled": False,
             "auto_subscribe_douban_ranks": ["movie-hot-gaia", "tv-hot"],
-            "auto_subscribe_douban_rsshub_base": "https://rsshub.app",
+            "auto_subscribe_douban_rsshub_base": "https://rsshub.liumingye.cn",
             "auto_subscribe_douban_rss_urls": [],
             "auto_subscribe_douban_proxy": False,
             "auto_subscribe_douban_min_vote": 6,
@@ -278,7 +278,7 @@ class UIConfig:
     @staticmethod
     def get_rsshub_instances() -> List[Dict[str, str]]:
         """读取 RSSHub 公共实例公告页，仅保留可作为服务根地址的 URL。"""
-        fallback = ["https://rsshub.app"]
+        fallback = ["https://rsshub.liumingye.cn"]
         url = "https://docs.rsshub.app/zh/guide/instances"
         try:
             response = requests.get(url, timeout=10, impersonate="chrome")

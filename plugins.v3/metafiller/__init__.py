@@ -788,7 +788,11 @@ class MetaFiller(_PluginBase):
             text = f"成功 {self._report.get('ok',0)} / 失败 {self._report.get('fail',0)} / 缩略图 {self._report.get('img',0)} / 跳过 {len(self._report.get('skipped',[]))}"
             skipped = self._report.get("skipped") or []
             if skipped:
-                text += "\n" + "\n".join(skipped[:10])
+                lines = []
+                for s in skipped[:10]:
+                    d = s.get("detail") or ""
+                    lines.append(f"- {s.get('series') or ''} S{s.get('season') or '?'} [{s.get('kind') or '?'}]{': ' + d if d else ''}")
+                text += "\n" + "\n".join(lines)
             self.post_message(mtype=NotificationType.Plugin, title=title, text=text)
         except Exception as e:
             logger.info(f"通知发送失败: {e}")

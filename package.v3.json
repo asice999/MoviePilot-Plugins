@@ -151,7 +151,6 @@
     "description": "监控中国电信手机套餐流量、语音、余额使用情况，每日自动查询并推送。",
     "labels": "电信,套餐,流量,监控",
     "version": "0.0.1",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/telecommonitor.png",
     "author": "asice999",
     "level": 1,
     "release": true,

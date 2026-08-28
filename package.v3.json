@@ -67,5 +67,18 @@
       "v1.2.0": "尝试优化成功率，未测试",
       "v1.0.0": "支持API方式签到，绕过CloudFlare防护，支持随机奖励和自动加鸡腿"
     }
+  },
+  "nodeseekcheckin": {
+    "name": "NodeSeek签到自用版",
+    "description": "自用：NodeSeek每日签到（合并架构测试版，业务在 core/signer.py）",
+    "labels": "签到,NodeSeek,论坛,自用",
+    "version": "1.0.0",
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v1.0.0": "首次发布。以合并架构（_PluginBase 壳 + core/signer.py 独立业务类）重构 NodeSeek 签到，验证分离式插件设计。"
+    }
   }
 }

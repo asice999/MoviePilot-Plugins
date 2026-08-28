@@ -448,11 +448,11 @@ class TelecomMonitor(_PluginBase):
             logger.error(f"查询套餐用量失败: {e}")
             return {"success": False, "error": str(e)}
 
-    def api_login(self, **kwargs) -> Dict[str, Any]:
+    def api_login(self, phonenum: str = "", password: str = "") -> Dict[str, Any]:
         """测试登录（API 端点）。"""
         try:
-            phonenum = kwargs.get("phonenum") or self._phonenum
-            password = kwargs.get("password") or self._password
+            phonenum = phonenum or self._phonenum
+            password = password or self._password
             if not phonenum or not password:
                 return {"success": False, "error": "手机号和密码不能为空"}
             login_info = self._do_login()
@@ -460,10 +460,10 @@ class TelecomMonitor(_PluginBase):
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def api_history(self, **kwargs) -> Dict[str, Any]:
+    def api_history(self, limit: int = 30) -> Dict[str, Any]:
         """获取查询历史。"""
         try:
-            limit = int(kwargs.get("limit", 30))
+            limit = int(limit)
             data = self.get_data("history") or []
             return {"success": True, "data": data[:limit]}
         except Exception as e:

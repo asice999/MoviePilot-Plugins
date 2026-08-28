@@ -346,6 +346,10 @@ class TelecomMonitor(_PluginBase):
 
         logger.info("电信套餐监控插件初始化完成")
 
+    def stop_service(self):
+        """停止服务（MP 生命周期调用）。"""
+        self.stop()
+
     def stop(self):
         """停止调度器。"""
         if self._scheduler:

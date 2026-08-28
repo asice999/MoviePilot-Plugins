@@ -2,6 +2,7 @@
 
 from base64 import b64encode
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Dict
 
 import qrcode.image.svg
@@ -164,6 +165,13 @@ class QRCodeService(OwnerDelegator):
             self._p115_cookies = cookies
             self._p115_manager = manager
             self._register_p115_provider()
+            # 同步写入持久化 cookie 文件，供 P115ClientWithTimeout 长期续期
+            try:
+                ck_path = Path(self.get_data_path()) / "p115_cookies.txt"
+                ck_path.parent.mkdir(parents=True, exist_ok=True)
+                ck_path.write_text(cookies, encoding="latin-1")
+            except Exception:
+                pass
             return {"cookies": cookies}
 
         if provider == "quark":

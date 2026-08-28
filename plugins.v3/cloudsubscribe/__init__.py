@@ -1395,6 +1395,7 @@ class CloudSubscribe(_PluginBase):
             refresh_token=mp_refresh_token,
             share_cache_ttl_minutes=self._search_cache_ttl_minutes,
             **self._p115_timeout_kwargs(),
+            cookies_path=str(self.get_data_path() / "p115_cookies.txt"),
         )
         if (
                 self._p115_cookies

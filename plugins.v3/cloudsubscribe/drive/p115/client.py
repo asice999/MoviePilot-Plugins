@@ -7,6 +7,7 @@ import threading
 from base64 import b64encode
 from inspect import signature as inspect_signature
 from io import BytesIO
+from pathlib import Path
 from typing import Optional, List, Dict, Any, Callable
 
 import qrcode
@@ -64,11 +65,19 @@ class P115ClientWithTimeout(P115Client if PAVAILABLE else object):
 
     def __init__(
             self,
-            cookies: str,
+            cookies: str = "",
             default_timeout: Optional[Dict[str, float]] = None,
             slow_timeout: Optional[Dict[str, float]] = None,
+            cookies_path: str = "",
     ):
-        super().__init__(cookies)
+        if cookies_path:
+            p = Path(cookies_path)
+            if not p.exists() and cookies:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(cookies, encoding="latin-1")
+            super().__init__(Path(cookies_path))
+        else:
+            super().__init__(cookies)
         self._default_timeout = default_timeout
         self._slow_timeout = slow_timeout
 
@@ -306,6 +315,7 @@ class P115ClientManager:
             slow_timeout: Optional[Dict[str, float]] = None,
             access_token: str = "",
             refresh_token: str = "",
+            cookies_path: str = "",
     ):
         """
         初始化115客户端
@@ -392,6 +402,7 @@ class P115ClientManager:
             ttl=3600,
         )
         self._account_info_lock = threading.Lock()
+        self._cookies_path = cookies_path
 
         if PAVAILABLE and (cookies or (access_token and refresh_token)):
             try:
@@ -416,6 +427,7 @@ class P115ClientManager:
                         cookies,
                         default_timeout=default_timeout if timeout_enabled else None,
                         slow_timeout=slow_timeout if timeout_enabled else None,
+                        cookies_path=self._cookies_path,
                     )
                 if access_token and refresh_token:
                     open_client = P115OpenClient(

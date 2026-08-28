@@ -24,7 +24,7 @@ class MetaFiller(_PluginBase):
     plugin_desc = "定时扫描 Emby 媒体库，找出缺失标题/简介的剧集，从电视猫抓取补全。"
     plugin_icon = "Emby_A.png"
     plugin_color = "#098663"
-    plugin_version = "1.1.0"
+    plugin_version = "1.2.0"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"
     plugin_config_prefix = "MetaFiller_"
@@ -320,7 +320,7 @@ class MetaFiller(_PluginBase):
                 need_desc = self._fill_desc
             else:
                 need_title = self._fill_title and (not en or self.__is_placeholder(en, n))
-                need_desc = self._fill_desc and not ov
+                need_desc = self._fill_desc and not self.__ov_or_placeholder(ov)
             if need_title or need_desc:
                 sn = ep.get("ParentIndexNumber")
                 if need_title:
@@ -435,16 +435,10 @@ class MetaFiller(_PluginBase):
                         time.sleep(0.3)
         return filled
     @staticmethod
-    def __is_placeholder(title, n):
-        """标题是否为无信息占位符（第N集/第N话/Episode N/S01E02），非占位则视为已有真标题"""
-        t = title.strip()
-        pats = [
-            r'^第\s*[0-9一二三四五六七八九十百零〇]+\s*[集话話期幕]$',
-            r'^(?:Episode|Ep|EP)\.?\s*\d+$',
-            r'^[Ss]\d{1,2}\s*[Ee]\d{1,3}$',
-            r'^\d{1,3}$',
-        ]
-        return any(re.match(p, t) for p in pats)
+    def __ov_or_placeholder(text):
+        t = (text or '').strip()
+        return (not t) or t.startswith('暂无英文版的简介') or t.startswith('暂无简介')
+
 
     def __tvmao_search(self, name, year=None):
         """Bing site 搜索定位电视猫剧集 code，带剧名+年份双重校验（年份软过滤）"""
@@ -516,7 +510,7 @@ class MetaFiller(_PluginBase):
         import urllib.request
         result = {}
         n = 1
-        max_eps = 60
+        max_eps = 400  # ponytail: 先覆盖长篇到400集；更长再提参数
         fail_count = 0
         while n <= max_eps:
             p = (n - 1) // 3

@@ -17,7 +17,7 @@
     "name": "缺失剧集元数据补全（自用）",
     "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
     "labels": "Emby,元数据,刮削,TMDB,缩略图",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
     "author": "asice999",
     "level": 1,

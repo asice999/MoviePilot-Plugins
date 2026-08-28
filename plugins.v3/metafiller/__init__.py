@@ -41,7 +41,7 @@ class MetaFiller(_PluginBase):
     _overwrite = False
     _fill_image = True
     _notify = True
-    _dry_run = False
+    _prefer_cn_source = False
     _only_series = ""
     _timeout = 15
 
@@ -69,7 +69,7 @@ class MetaFiller(_PluginBase):
         self._overwrite = bool(config.get("overwrite", False))
         self._fill_image = bool(config.get("fill_image", True))
         self._notify = bool(config.get("notify", True))
-        self._dry_run = bool(config.get("dry_run", False))
+        self._prefer_cn_source = bool(config.get("prefer_cn_source", False))
         self._only_series = (config.get("only_series") or "").strip()
         if self._onlyonce:
             self._onlyonce = False
@@ -156,10 +156,10 @@ class MetaFiller(_PluginBase):
                     {"component": "VSwitch", "props": {
                         "model": "dry_run", "label": "仅分析不写入（预览）",
                         "hint": "只统计待补数量与冲突，不修改 Emby"}}]},
-                {"component": "VCol", "props": {"cols": 8}, "content": [
-                    {"component": "VTextField", "props": {
-                        "model": "only_series", "label": "只处理指定剧（剧名或 Series ID，逗号分隔）",
-                        "placeholder": "留空=按扫描范围全量"}}]},
+                {"component": "VCol", "props": {"cols": 4}, "content": [
+                    {"component": "VSwitch", "props": {
+                        "model": "prefer_cn_source", "label": "中文源优先（电视猫优先）",
+                        "hint": "开启后优先用电视猫补中文简介"}}]},
             ]},
         ], self._conf
     def get_page(self):
@@ -355,6 +355,24 @@ class MetaFiller(_PluginBase):
                     # TVDB/Emby 是主源；无季号源无法可靠映射到多季剧，宁缺勿错
                     logger.info(f"[{name}] S{sn} TMDB 未命中，多季/特别篇跳过无季号回退")
                     self.__skip(name, sn, "tmdb_no_season", "多季/特别篇，无季号源不参与")
+                if self._prefer_cn_source:
+                    logger.info(f"[{name}] S{sn} 中文源优先，回退电视猫/央视/TMDB")
+                    code = self.__tvmao_search(name, year)
+                    if code:
+                        sdata = self.__tvmao_fetch_all(code) or {}
+                        seasonless = bool(sdata)
+                        if sdata:
+                            logger.info(f"[{name}] S{sn} 电视猫命中 {len(sdata)} 集")
+                    if not sdata:
+                        sdata = self.__cctv_fetch_all(name) or {}
+                        seasonless = bool(sdata)
+                        if sdata:
+                            logger.info(f"[{name}] S{sn} 央视网命中 {len(sdata)} 集")
+                    if not sdata:
+                        sdata = self.__tmdb_fetch_all(name, year, sn, tid_cached) or {}
+                        seasonless = bool(sdata)
+                        if sdata:
+                            logger.info(f"[{name}] S{sn} TMDB 兜底命中 {len(sdata)} 集")
                 else:
                     logger.info(f"[{name}] S{sn} TMDB 未命中，回退电视猫/央视")
                     code = self.__tvmao_search(name, year)

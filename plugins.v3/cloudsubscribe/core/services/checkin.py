@@ -736,6 +736,11 @@ class CheckinService(OwnerDelegator):
             status = check_response(client.user_points_sign())
             data = status.get("data") or {}
             if int(data.get("is_sign_today") or 0) == 1:
+                try:
+                    bal_data = (check_response(client.user_points_balance()).get("data") or {})
+                    points_after = bal_data.get("count") or bal_data.get("points")
+                except Exception:
+                    points_after = None
                 return {
                     "success": True,
                     "already_checked_in": True,
@@ -743,6 +748,7 @@ class CheckinService(OwnerDelegator):
                     "message": "今日已签到，无需重复签到",
                     "signin_points": 0,
                     "points_change": 0,
+                    "points_after": points_after,
                     "signin_days": data.get("continuous_day"),
                     "status_code": 200,
                 }
@@ -750,13 +756,19 @@ class CheckinService(OwnerDelegator):
             result_data = result.get("data") or {}
             points = int(result_data.get("points_num") or 0)
             days = result_data.get("continuous_day")
+            # 签到响应无余额字段，单独查积分余额
+            try:
+                bal_data = (check_response(client.user_points_balance()).get("data") or {})
+                points_after = bal_data.get("count") or bal_data.get("points")
+            except Exception:
+                points_after = result_data.get("points") or result_data.get("balance")
             return {
                 "success": True,
                 "status": "签到成功",
                 "message": f"签到成功，连续签到 {days or 0} 天，获得 {points} 枫叶",
                 "signin_points": points,
                 "points_change": points,
-                "points_after": result_data.get("points") or result_data.get("balance"),
+                "points_after": points_after,
                 "signin_days": days,
                 "status_code": 200,
             }

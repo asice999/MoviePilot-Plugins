@@ -17,13 +17,14 @@
     "name": "缺失剧集元数据补全（自用）",
     "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
     "labels": "Emby,元数据,刮削,TMDB,缩略图",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
     "author": "asice999",
     "level": 1,
     "release": true,
     "system_version": ">=3.0.0",
     "history": {
+      "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
       "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
       "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
     }

@@ -24,7 +24,7 @@ class MetaFiller(_PluginBase):
     plugin_desc = "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。"
     plugin_icon = "Emby_A.png"
     plugin_color = "#098663"
-    plugin_version = "1.3.0"
+    plugin_version = "1.3.1"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"
     plugin_config_prefix = "MetaFiller_"

@@ -24,7 +24,7 @@ class MetaFiller(_PluginBase):
     plugin_desc = "定时扫描 Emby 媒体库，找出缺失标题/简介的剧集，从电视猫抓取补全。"
     plugin_icon = "Emby_A.png"
     plugin_color = "#098663"
-    plugin_version = "1.0.0"
+    plugin_version = "1.1.0"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"
     plugin_config_prefix = "MetaFiller_"
@@ -73,7 +73,7 @@ class MetaFiller(_PluginBase):
         self._only_series = (config.get("only_series") or "").strip()
         if self._onlyonce:
             self._onlyonce = False
-            self.update_config({"onlyonce": False})
+            self.update_config({**self._conf, "onlyonce": False})
             threading.Thread(target=self._run_once, daemon=True).start()
     def get_state(self):
         return self._enabled

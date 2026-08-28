@@ -80,5 +80,57 @@
     "history": {
       "v1.0.0": "首次发布。以合并架构（_PluginBase 壳 + core/signer.py 独立业务类）重构 NodeSeek 签到，验证分离式插件设计。"
     }
+  },
+  "AutoSignIn": {
+    "name": "站点自动签到（自用）",
+    "description": "自用：自动模拟登录、签到站点。",
+    "labels": "签到,站点",
+    "version": "2.9.4",
+    "icon": "signin.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v2.9.4": "自用版：基于 MP 内置 v2.9.4，作者改为 asice999。"
+    }
+  },
+  "SiteStatistic": {
+    "name": "站点数据统计（自用）",
+    "description": "自用：站点统计数据图表。",
+    "labels": "统计,站点,仪表板",
+    "version": "1.9.2",
+    "icon": "statistic.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
+    }
+  },
+  "SiteRefresh": {
+    "name": "站点自动更新（自用）",
+    "description": "自用：使用浏览器模拟登录站点获取Cookie和UA。",
+    "labels": "站点,cookie,自动更新",
+    "version": "1.2",
+    "icon": "Chrome_A.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v1.2": "自用版：基于 MP 内置 v1.2，作者改为 asice999。"
+    }
+  },
+  "SiteAssessment": {
+    "name": "站点考核状态（自用）",
+    "description": "自用：自动获取站点考核情况并在仪表板显示，支持考核临近时发送通知。",
+    "labels": "考核,站点,仪表板",
+    "version": "2.1",
+    "icon": "statistic.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v2.1": "自用版：基于 bfjy2024 v2.1，作者改为 asice999。"
+    }
   }
 }

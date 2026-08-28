@@ -1,2 +1,23 @@
+# 敏感/配置文件，防止误提交
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+config.json
+config.yaml
+config.yml
+*.pem
+*.key
+*.crt
+credentials*
+cookie*
+*_cookie*
+*_cookies*
+*_token*
+*_tokens*
+*.log
 __pycache__/
 *.pyc
+node_modules/
+dist/

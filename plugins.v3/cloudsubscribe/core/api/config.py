@@ -26,15 +26,12 @@ class ConfigApi(OwnerDelegator):
 
     @staticmethod
     def _validate_search_proxy_config(payload: Dict[str, Any]) -> None:
-        """校验并规范化搜索渠道专用代理配置。"""
+        """校验并规范化搜索渠道专用代理配置。仅支持地址，忽略用户名/密码。"""
         proxy = str(payload.get("search_proxy", "") or "").strip()
-        username = str(payload.get("search_proxy_username", "") or "").strip()
-        password = str(payload.get("search_proxy_password", "") or "")
         normalized = validate_proxy_address(proxy)
-        build_proxy_url(normalized, username, password)
         payload["search_proxy"] = normalized
-        payload["search_proxy_username"] = username
-        payload["search_proxy_password"] = password
+        payload["search_proxy_username"] = ""
+        payload["search_proxy_password"] = ""
 
     def _validate_checkin_config(
             self,
@@ -177,19 +174,16 @@ class ConfigApi(OwnerDelegator):
             payload[proxy_key] = bool(payload.get(proxy_key, False))
             proxy_enabled = proxy_enabled or payload[proxy_key]
         proxy = str(payload.get("auto_subscribe_proxy", "") or "").strip()
-        username = str(payload.get("auto_subscribe_proxy_username", "") or "").strip()
-        password = str(payload.get("auto_subscribe_proxy_password", "") or "")
-        if proxy or username or password:
+        if proxy:
             try:
                 normalized = validate_proxy_address(proxy)
-                build_proxy_url(normalized, username, password)
             except ValueError as error:
                 return f"榜单代理配置无效：{error}"
             payload["auto_subscribe_proxy"] = normalized
         else:
             payload["auto_subscribe_proxy"] = ""
-        payload["auto_subscribe_proxy_username"] = username
-        payload["auto_subscribe_proxy_password"] = password
+        payload["auto_subscribe_proxy_username"] = ""
+        payload["auto_subscribe_proxy_password"] = ""
         if proxy_enabled and not payload["auto_subscribe_proxy"]:
             return "已启用榜单代理，请先填写榜单代理地址"
         UIConfig.normalize_auto_subscribe_years(payload)

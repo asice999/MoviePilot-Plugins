@@ -24,7 +24,7 @@ class TelecomMonitor(_PluginBase):
 
     plugin_name = "电信套餐监控"
     plugin_desc = "监控中国电信手机套餐流量、语音、余额使用情况，每日自动查询并推送。"
-    plugin_icon = "https://raw.githubusercontent.com/Cp0204/ChinaTelecomMonitor/main/icon.png"
+    plugin_icon = "https://raw.githubusercontent.com/odomu/MoviePilot-Plugins/main/icons/cloud.png"
     plugin_version = "0.0.1"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"

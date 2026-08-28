@@ -111,7 +111,7 @@ class CloudSubscribe(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/odomu/MoviePilot-Plugins/main/icons/cloud.png"
     # 插件版本
-    plugin_version = "1.3.0"
+    plugin_version = "1.3.1"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页
@@ -1277,6 +1277,27 @@ class CloudSubscribe(_PluginBase):
             "slow_timeout": timeout_values("slow"),
         }
 
+    def _get_mp_u115_token(self) -> Tuple[str, str]:
+        """从 MP 存储配置读取 115 开放平台 token（access_token + refresh_token）。
+
+        如果 MP 配置了 u115 类型存储，自动复用其 token，
+        让 open API 接口（文件列表、离线下载、上传等）免 cookie。
+        """
+        try:
+            from app.application.storage import StorageHelper
+            storages = StorageHelper.get_storagies()
+            for s in storages:
+                if s.get("type") == "u115":
+                    cfg = s.get("config") or {}
+                    at = cfg.get("access_token", "")
+                    rt = cfg.get("refresh_token", "")
+                    if at and rt:
+                        logger.info(f"从 MP 存储配置读取 115 开放平台 token（用户：{cfg.get('user_name', '?')}）")
+                        return at, rt
+        except Exception as e:
+            logger.debug(f"读取 MP 115 存储配置失败: {e}")
+        return "", ""
+
     def _init_clients(self):
         """初始化客户端"""
         self._p115_manager = None
@@ -1367,8 +1388,11 @@ class CloudSubscribe(_PluginBase):
             else:
                 logger.info(f"HDHive 配置已加载（模式：{self._hdhive_query_mode}）")
 
+        mp_access_token, mp_refresh_token = self._get_mp_u115_token()
         self._p115_manager = P115ClientManager(
             cookies=self._p115_cookies,
+            access_token=mp_access_token,
+            refresh_token=mp_refresh_token,
             share_cache_ttl_minutes=self._search_cache_ttl_minutes,
             **self._p115_timeout_kwargs(),
         )

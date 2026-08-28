@@ -21,7 +21,7 @@ from ...core import get_component, resolve_component
 from ...utils.cache import create_platform_ttl_cache
 
 try:
-    from p115client import P115Client, check_response
+    from p115client import P115Client, P115OpenClient, check_response
     from p115client.const import APP_TO_SSOENT
 
     PAVAILABLE = True
@@ -99,6 +99,65 @@ class P115ClientWithTimeout(P115Client if PAVAILABLE else object):
             return attr(*args, **kwargs)
 
         return wrapper
+
+
+class P115ClientRouter:
+    """同时持有 Cookie 客户端与开放平台(Token)客户端，按方法能力自动路由。
+
+    - open client 有的方法（fs/upload/clouddownload 等开放平台接口）优先走 token
+    - 其余（share_receive/share_snap 等仅网页可用）回落到 cookie client
+    - 两个都没有的方法抛 AttributeError
+    - 显式定义归一化方法（user_my_info）统一两种客户端返回结构
+    """
+
+    def __init__(self, cookie_client=None, open_client=None):
+        self.cookie_client = cookie_client
+        self.open_client = open_client
+        import time as _time
+        self._time = _time
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        open_client = object.__getattribute__(self, "open_client")
+        cookie_client = object.__getattribute__(self, "cookie_client")
+        if open_client is not None and hasattr(open_client, name):
+            return getattr(open_client, name)
+        if cookie_client is not None and hasattr(cookie_client, name):
+            return getattr(cookie_client, name)
+        raise AttributeError(
+            f"115 客户端缺少方法 {name}（open={bool(open_client)} cookie={bool(cookie_client)}）"
+        )
+
+    def user_my_info(self):
+        """统一返回 user_my_info 风格数据, 兼容 cookie 返回结构。"""
+        cookie = object.__getattribute__(self, "cookie_client")
+        open_ = object.__getattribute__(self, "open_client")
+        if cookie is not None and hasattr(cookie, "user_my_info"):
+            return cookie.user_my_info()
+        if open_ is not None:
+            r = open_.user_info()
+            data = r.get("data") or {}
+            vi = data.get("vip_info") or {}
+            expire = vi.get("expire", 0) or 0
+            now = self._time.time()
+            is_vip = 1 if expire > now else 0
+            is_forever = 1 if expire > now + 365 * 86400 * 10 else 0
+            return {
+                "state": True,
+                "data": {
+                    "uname": data.get("user_name", ""),
+                    "user_id": str(data.get("user_id", "")),
+                    "face": {"face_s": data.get("user_face_s", "")},
+                    "vip": {
+                        "is_vip": is_vip,
+                        "is_forever": is_forever,
+                        "expire": expire,
+                        "expire_str": str(vi.get("level_name", "")),
+                    },
+                },
+            }
+        return {"state": False, "data": {}, "error": "115 未登录"}
 
 
 _COMPONENT_TYPES = (
@@ -245,17 +304,25 @@ class P115ClientManager:
             timeout_enabled: bool = True,
             default_timeout: Optional[Dict[str, float]] = None,
             slow_timeout: Optional[Dict[str, float]] = None,
+            access_token: str = "",
+            refresh_token: str = "",
     ):
         """
         初始化115客户端
 
-        :param cookies: 115 Cookie
+        :param cookies: 115 Cookie（网页端接口，如分享接收）
+        :param access_token: 115 开放平台 access_token（可来自 MP 存储配置）
+        :param refresh_token: 115 开放平台 refresh_token
         :param user_agent: User-Agent
         :param min_interval: API 请求最小间隔（秒），默认 1.5
         :param path_cache_ttl: 路径缓存过期时间（秒），默认 3600
         """
-        self.cookies = cookies
-        cache_scope = hashlib.sha1(cookies.encode("utf-8")).hexdigest()[:12]
+        self.cookies = cookies or ""
+        self.access_token = access_token or ""
+        self.refresh_token = refresh_token or ""
+        cache_scope = hashlib.sha1(
+            (self.cookies or self.access_token).encode("utf-8")
+        ).hexdigest()[:12]
         self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         self.client: Optional[Any] = None
         self._login_checked = False
@@ -265,7 +332,7 @@ class P115ClientManager:
         # 速率限制
         _min_interval = min_interval if min_interval is not None else self.DEFAULT_MIN_INTERVAL
         self.rate_limiter = DriveRateLimiter.shared(
-            "p115", cookies, min_interval=_min_interval
+            "p115", self.cookies or self.access_token, min_interval=_min_interval
         )
 
         # 路径缓存（带 TTL）
@@ -326,26 +393,38 @@ class P115ClientManager:
         )
         self._account_info_lock = threading.Lock()
 
-        if PAVAILABLE and cookies:
+        if PAVAILABLE and (cookies or (access_token and refresh_token)):
             try:
-                if timeout_enabled and default_timeout is None:
-                    default_timeout = {
-                        "connect": 30,
-                        "pool": 15,
-                        "read": 60,
-                        "write": 60,
-                    }
-                if timeout_enabled and slow_timeout is None:
-                    slow_timeout = {
-                        "connect": 30,
-                        "pool": 15,
-                        "read": 300,
-                        "write": 300,
-                    }
-                self.client = P115ClientWithTimeout(
-                    cookies,
-                    default_timeout=default_timeout if timeout_enabled else None,
-                    slow_timeout=slow_timeout if timeout_enabled else None,
+                cookie_client = None
+                open_client = None
+                if cookies:
+                    if timeout_enabled and default_timeout is None:
+                        default_timeout = {
+                            "connect": 30,
+                            "pool": 15,
+                            "read": 60,
+                            "write": 60,
+                        }
+                    if timeout_enabled and slow_timeout is None:
+                        slow_timeout = {
+                            "connect": 30,
+                            "pool": 15,
+                            "read": 300,
+                            "write": 300,
+                        }
+                    cookie_client = P115ClientWithTimeout(
+                        cookies,
+                        default_timeout=default_timeout if timeout_enabled else None,
+                        slow_timeout=slow_timeout if timeout_enabled else None,
+                    )
+                if access_token and refresh_token:
+                    open_client = P115OpenClient(
+                        access_token=access_token,
+                        refresh_token=refresh_token,
+                    )
+                self.client = P115ClientRouter(
+                    cookie_client=cookie_client,
+                    open_client=open_client,
                 )
             except Exception as e:
                 logger.error(f"初始化 P115Client 失败: {e}")
@@ -474,13 +553,14 @@ class P115ClientManager:
 
                 space_data = {}
                 try:
-                    space_response = self._rate_limited_call(
-                        self.client.fs_index_info, payload=0
-                    )
-                    check_response(space_response)
-                    space_data = (
-                            (space_response.get("data") or {}).get("space_info") or {}
-                    )
+                    if hasattr(self.client, "fs_index_info"):
+                        space_response = self._rate_limited_call(
+                            self.client.fs_index_info, payload=0
+                        )
+                        check_response(space_response)
+                        space_data = (
+                                (space_response.get("data") or {}).get("space_info") or {}
+                        )
                 except Exception as error:
                     logger.warning(
                         f"获取115空间信息失败但登录仍有效："

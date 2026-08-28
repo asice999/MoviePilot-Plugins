@@ -132,5 +132,18 @@
     "history": {
       "v2.1": "自用版：基于 bfjy2024 v2.1，作者改为 asice999。"
     }
+  },
+  "SiteManager": {
+    "name": "站点多面板管理器",
+    "description": "自用：合并签到、统计、刷新、考核的多面板管理器",
+    "labels": "站点,面板,签到,统计,考核",
+    "version": "0.1.0",
+    "icon": "statistic.png",
+    "author": "asice999",
+    "level": 2,
+    "v2": true,
+    "history": {
+      "v0.1.0": "测试版：聚合 SiteRefresh / AutoSignIn / SiteStatistic / SiteAssessment 的多面板壳。"
+    }
   }
 }

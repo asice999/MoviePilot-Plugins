@@ -84,7 +84,8 @@ def build_proxy_url(proxy: Any, username: Any = "", password: Any = "") -> str:
             raise ValueError("填写代理鉴权信息前必须先填写代理地址")
         return ""
     if normalized_password and not normalized_username:
-        raise ValueError("填写代理密码时必须同时填写代理用户名")
+        # 仅填密码而无用户名时，忽略密码直接使用代理地址
+        return value
     if not normalized_username:
         return value
     parsed = urlsplit(value)

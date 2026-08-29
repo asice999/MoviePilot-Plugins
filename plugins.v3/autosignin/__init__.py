@@ -1,3 +1,4 @@
+import json
 import re
 import traceback
 from datetime import datetime, timedelta
@@ -33,15 +34,15 @@ class AutoSignIn(_PluginBase):
     # 插件名称
     plugin_name = "站点自动签到"
     # 插件描述
-    plugin_desc = "自用：自动模拟登录、签到站点。"
+    plugin_desc = "自动模拟登录、签到站点。"
     # 插件图标
     plugin_icon = "signin.png"
     # 插件版本
     plugin_version = "2.9.4"
     # 插件作者
-    plugin_author = "asice999"
+    plugin_author = "thsrite"
     # 作者主页
-    author_url = "https://github.com/asice999"
+    author_url = "https://github.com/thsrite"
     # 插件配置项ID前缀
     plugin_config_prefix = "autosignin_"
     # 加载顺序
@@ -53,6 +54,9 @@ class AutoSignIn(_PluginBase):
     _scheduler: Optional[BackgroundScheduler] = None
     # 加载的模块
     _site_schema: list = []
+
+    # 浏览器登录凭据（cookie 维护）
+    _browser_login_creds: dict = {}
 
     # 配置属性
     _enabled: bool = False
@@ -85,6 +89,11 @@ class AutoSignIn(_PluginBase):
             self._retry_keyword = config.get("retry_keyword")
             self._auto_cf = config.get("auto_cf")
             self._clean = config.get("clean")
+            self._browser_login_creds = {}
+            for i in range(1, 6):
+                self._browser_login_creds[f"browser_login_site_{i}"] = config.get(f"browser_login_site_{i}", "")
+                self._browser_login_creds[f"browser_login_user_{i}"] = (config.get(f"browser_login_user_{i}") or "").strip()
+                self._browser_login_creds[f"browser_login_pass_{i}"] = (config.get(f"browser_login_pass_{i}") or "").strip()
 
             # 过滤掉已删除的站点
             all_sites = [site.id for site in SiteOper().list_order_by_pri()] + [site.get("id") for site in
@@ -136,6 +145,21 @@ class AutoSignIn(_PluginBase):
                 "retry_keyword": self._retry_keyword,
                 "auto_cf": self._auto_cf,
                 "clean": self._clean,
+                "browser_login_site_1": self._browser_login_creds.get("browser_login_site_1", ""),
+                "browser_login_user_1": self._browser_login_creds.get("browser_login_user_1", ""),
+                "browser_login_pass_1": self._browser_login_creds.get("browser_login_pass_1", ""),
+                "browser_login_site_2": self._browser_login_creds.get("browser_login_site_2", ""),
+                "browser_login_user_2": self._browser_login_creds.get("browser_login_user_2", ""),
+                "browser_login_pass_2": self._browser_login_creds.get("browser_login_pass_2", ""),
+                "browser_login_site_3": self._browser_login_creds.get("browser_login_site_3", ""),
+                "browser_login_user_3": self._browser_login_creds.get("browser_login_user_3", ""),
+                "browser_login_pass_3": self._browser_login_creds.get("browser_login_pass_3", ""),
+                "browser_login_site_4": self._browser_login_creds.get("browser_login_site_4", ""),
+                "browser_login_user_4": self._browser_login_creds.get("browser_login_user_4", ""),
+                "browser_login_pass_4": self._browser_login_creds.get("browser_login_pass_4", ""),
+                "browser_login_site_5": self._browser_login_creds.get("browser_login_site_5", ""),
+                "browser_login_user_5": self._browser_login_creds.get("browser_login_user_5", ""),
+                "browser_login_pass_5": self._browser_login_creds.get("browser_login_pass_5", ""),
             }
         )
 
@@ -444,6 +468,282 @@ class AutoSignIn(_PluginBase):
                                             'model': 'login_sites',
                                             'label': '登录站点',
                                             'items': site_options
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'text': '浏览器登录凭据：登录成功后自动用账号密码通过浏览器重新登录，刷新Cookie防止过期。最多配置5组，站点选择后填写用户名和密码。'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 6,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'browser_login_site_1',
+                                            'label': '站点1',
+                                            'items': site_options
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_user_1',
+                                            'label': '用户名1'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_pass_1',
+                                            'label': '密码1'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 6,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'browser_login_site_2',
+                                            'label': '站点2',
+                                            'items': site_options
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_user_2',
+                                            'label': '用户名2'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_pass_2',
+                                            'label': '密码2'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 6,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'browser_login_site_3',
+                                            'label': '站点3',
+                                            'items': site_options
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_user_3',
+                                            'label': '用户名3'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_pass_3',
+                                            'label': '密码3'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 6,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'browser_login_site_4',
+                                            'label': '站点4',
+                                            'items': site_options
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_user_4',
+                                            'label': '用户名4'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_pass_4',
+                                            'label': '密码4'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 6,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'browser_login_site_5',
+                                            'label': '站点5',
+                                            'items': site_options
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_user_5',
+                                            'label': '用户名5'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 3,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'browser_login_pass_5',
+                                            'label': '密码5'
                                         }
                                     }
                                 ]
@@ -1736,6 +2036,59 @@ class AutoSignIn(_PluginBase):
             traceback.print_exc()
             return False, f"签到失败：{str(e)}！"
 
+    def __browser_login_update_cookie(self, site_info: CommentedMap) -> Tuple[bool, str]:
+        """用账号密码通过浏览器登录，刷新站点 cookie"""
+        site_id = str(site_info.get("id") or "")
+        site_url = str(site_info.get("url") or "").strip()
+        domain = StringUtils.get_url_domain(site_url)
+        cred_user = ""
+        cred_pass = ""
+        for i in range(1, 6):
+            if self._browser_login_creds.get(f"browser_login_site_{i}") == site_id:
+                cred_user = self._browser_login_creds.get(f"browser_login_user_{i}", "")
+                cred_pass = self._browser_login_creds.get(f"browser_login_pass_{i}", "")
+                break
+        if not cred_user or not cred_pass:
+            return False, ""
+        login_url = f"{site_url.rstrip('/')}/login.php"
+
+        def _login(page) -> str:
+            try:
+                for selector in ["input[name='username']", "input[name='email']", "input[type='email']"]:
+                    if page.query_selector(selector):
+                        page.fill(selector, cred_user)
+                        break
+                for selector in ["input[name='password']", "input[type='password']"]:
+                    if page.query_selector(selector):
+                        page.fill(selector, cred_pass)
+                        break
+                try:
+                    page.click("button[type='submit']")
+                except Exception:
+                    page.keyboard.press("Enter")
+                page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception as e:
+                logger.warn(f"浏览器登录失败：{str(e)}")
+            try:
+                cookies = page.context.cookies()
+                return "; ".join([f"{c.get('name')}={c.get('value')}" for c in cookies if c and c.get("name")])
+            except Exception:
+                return ""
+
+        cookie_str = PlaywrightHelper().action(
+            url=login_url,
+            callback=_login,
+            cookies=site_info.get("cookie"),
+            ua=site_info.get("ua"),
+            proxies=settings.PROXY if site_info.get("proxy") else None,
+            headless=True,
+            timeout=60,
+        )
+        if not cookie_str:
+            return False, "浏览器登录未获取到Cookie"
+        ok, msg = SiteOper().update_cookie(domain=domain, cookies=cookie_str)
+        return ok, msg
+
     def login_site(self, site_info: CommentedMap) -> Tuple[str, str]:
         """
         模拟登录一个站点
@@ -1756,6 +2109,15 @@ class AutoSignIn(_PluginBase):
         domain = StringUtils.get_url_domain(site_info.get('url'))
         if state:
             SiteOper().success(domain=domain, seconds=seconds)
+            # 若配置了浏览器登录凭据，自动重新登录刷新Cookie
+            try:
+                ok, msg = self.__browser_login_update_cookie(site_info)
+                if ok:
+                    message = f"{message}，Cookie已刷新"
+                elif msg:
+                    message = f"{message}，Cookie刷新失败：{msg}"
+            except Exception as e:
+                logger.warn(f"浏览器登录刷新Cookie失败：{str(e)}")
         else:
             SiteOper().fail(domain)
         return site_info.get("name"), message

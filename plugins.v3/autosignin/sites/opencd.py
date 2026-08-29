@@ -1,12 +1,11 @@
 import json
 import time
-from typing import Tuple
+from typing import Optional, Tuple
 
 from lxml import etree
 from ruamel.yaml import CommentedMap
 
 from app.core.config import settings
-from app.helper.ocr import OcrHelper
 from app.log import logger
 from app.plugins.autosignin.sites import _ISiteSigninHandler
 from app.utils.http import RequestUtils
@@ -95,10 +94,10 @@ class Opencd(_ISiteSigninHandler):
         ocr_result = None
         # 识别几次
         while times <= 3:
-            # ocr二维码识别
-            ocr_result = OcrHelper().get_captcha_text(image_url=img_get_url,
-                                                      cookie=site_cookie,
-                                                      ua=ua)
+            # ddddocr 本地识别验证码
+            ocr_result = self.__recognize_captcha(img_get_url=img_get_url,
+                                                  cookie=site_cookie,
+                                                  ua=ua)
             logger.debug(f"ocr识别{site}验证码 {ocr_result}")
             if ocr_result:
                 if len(ocr_result) == 6:
@@ -132,3 +131,20 @@ class Opencd(_ISiteSigninHandler):
 
         logger.error(f'{site} 签到失败：未获取到验证码')
         return False, '签到失败：未获取到验证码'
+
+
+    @staticmethod
+    def __recognize_captcha(img_get_url: str, cookie: str, ua: str) -> Optional[str]:
+        """
+        下载验证码图片并使用 ddddocr 本地识别
+        """
+        import ddddocr
+        ocr = ddddocr.DdddOcr(show_ad=False)
+        img_res = RequestUtils(cookies=cookie, ua=ua).get_res(url=img_get_url)
+        if not img_res or img_res.status_code != 200:
+            return None
+        result = ocr.classification(img_res.content)
+        if not result:
+            return None
+        # opencd 验证码为字母数字混合(如 mr19b6), 直接用识别结果
+        return result if len(result) == 6 else None

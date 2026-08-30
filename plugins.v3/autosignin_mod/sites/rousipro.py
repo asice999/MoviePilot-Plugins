@@ -6,7 +6,7 @@ from app.log import logger
 from app.core.config import settings
 from app.utils.http import RequestUtils
 from app.utils.string import StringUtils
-from app.plugins.autosignin.sites import _ISiteSigninHandler
+from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
 
 
 class RousiPro(_ISiteSigninHandler):

@@ -4,22 +4,22 @@ from ruamel.yaml import CommentedMap
 
 from app.core.config import settings
 from app.log import logger
-from app.plugins.autosignin.sites import _ISiteSigninHandler
+from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
 from app.utils.http import RequestUtils
 from app.utils.string import StringUtils
 
 
-class HDArea(_ISiteSigninHandler):
+class NexusHD(_ISiteSigninHandler):
     """
-    好大签到
+    NexusHD签到
     """
 
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "hdarea.club"
+    site_url = "v6.nexushd.org"
 
     # 签到成功
-    _success_text = "此次签到您获得"
-    _repeat_text = "请不要重复签到哦"
+    _success_text = "本次签到获得"
+    _repeat_text = "你今天已经签到过了"
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -44,13 +44,14 @@ class HDArea(_ISiteSigninHandler):
 
         # 获取页面html
         data = {
-            'action': 'sign_in'
+            'action': 'post',
+            'content': ''
         }
         html_res = RequestUtils(cookies=site_cookie,
                                 ua=ua,
                                 proxies=proxies,
                                 timeout=timeout
-                                ).post_res(url="https://hdarea.club/sign_in.php", data=data)
+                                ).post_res(url="https://v6.nexushd.org/signin.php", data=data)
         if not html_res or html_res.status_code != 200:
             logger.error(f"{site} 签到失败，请检查站点连通性")
             return False, '签到失败，请检查站点连通性'

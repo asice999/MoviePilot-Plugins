@@ -1,21 +1,25 @@
+import re
 from typing import Tuple
 
 from ruamel.yaml import CommentedMap
 
 from app.log import logger
-from app.plugins.autosignin.sites import _ISiteSigninHandler
+from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
 from app.utils.string import StringUtils
 
 
-class HaiDan(_ISiteSigninHandler):
+class HDUpt(_ISiteSigninHandler):
     """
-    海胆签到
+    hdu签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "haidan.video"
+    site_url = "pt.hdupt.com"
+
+    # 已签到
+    _sign_regex = ['<span id="yiqiandao">']
 
     # 签到成功
-    _succeed_regex = ['(?<=value=")已经打卡(?=")']
+    _success_text = '本次签到获得魅力'
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -39,17 +43,8 @@ class HaiDan(_ISiteSigninHandler):
         render = site_info.get("render")
         timeout = site_info.get("timeout")
 
-        # 签到
-        # 签到页会重定向到index.php，由于302重定向特性，导致index.php没有携带cookie
-        self.get_page_source(url='https://www.haidan.video/signin.php',
-                             cookie=site_cookie,
-                             ua=ua,
-                             proxy=proxy,
-                             render=render,
-                             timeout=timeout)
-
-        # 重新携带cookie获取index.php查看签到结果
-        html_text = self.get_page_source(url='https://www.haidan.video/index.php',
+        # 获取页面html
+        html_text = self.get_page_source(url='https://pt.hdupt.com',
                                          cookie=site_cookie,
                                          ua=ua,
                                          proxy=proxy,
@@ -64,8 +59,25 @@ class HaiDan(_ISiteSigninHandler):
             return False, '签到失败，Cookie已失效'
 
         sign_status = self.sign_in_result(html_res=html_text,
-                                          regexs=self._succeed_regex)
+                                          regexs=self._sign_regex)
         if sign_status:
+            logger.info(f"{site} 今日已签到")
+            return True, '今日已签到'
+
+        # 签到
+        html_text = self.get_page_source(url='https://pt.hdupt.com/added.php?action=qiandao',
+                                         cookie=site_cookie,
+                                         ua=ua,
+                                         proxy=proxy,
+                                         render=render,
+                                         timeout=timeout)
+        if not html_text:
+            logger.error(f"{site} 签到失败，请检查站点连通性")
+            return False, '签到失败，请检查站点连通性'
+
+        logger.debug(f"{site} 签到接口返回 {html_text}")
+        # 判断是否已签到 sign_res.text = ".23"
+        if len(list(map(int, re.findall(r"\d+", html_text)))) > 0:
             logger.info(f"{site} 签到成功")
             return True, '签到成功'
 

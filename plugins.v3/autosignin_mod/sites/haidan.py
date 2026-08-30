@@ -3,19 +3,19 @@ from typing import Tuple
 from ruamel.yaml import CommentedMap
 
 from app.log import logger
-from app.plugins.autosignin.sites import _ISiteSigninHandler
+from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
 from app.utils.string import StringUtils
 
 
-class PTTime(_ISiteSigninHandler):
+class HaiDan(_ISiteSigninHandler):
     """
-    PT时间签到
+    海胆签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "pttime.org"
+    site_url = "haidan.video"
 
     # 签到成功
-    _succeed_regex = ['签到成功']
+    _succeed_regex = ['(?<=value=")已经打卡(?=")']
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -40,14 +40,21 @@ class PTTime(_ISiteSigninHandler):
         timeout = site_info.get("timeout")
 
         # 签到
-        # 签到返回：<html><head></head><body>签到成功</body></html>
-        html_text = self.get_page_source(url='https://www.pttime.org/attendance.php',
+        # 签到页会重定向到index.php，由于302重定向特性，导致index.php没有携带cookie
+        self.get_page_source(url='https://www.haidan.video/signin.php',
+                             cookie=site_cookie,
+                             ua=ua,
+                             proxy=proxy,
+                             render=render,
+                             timeout=timeout)
+
+        # 重新携带cookie获取index.php查看签到结果
+        html_text = self.get_page_source(url='https://www.haidan.video/index.php',
                                          cookie=site_cookie,
                                          ua=ua,
                                          proxy=proxy,
                                          render=render,
                                          timeout=timeout)
-
         if not html_text:
             logger.error(f"{site} 签到失败，请检查站点连通性")
             return False, '签到失败，请检查站点连通性'

@@ -452,6 +452,7 @@ class MetaFiller(_PluginBase):
                         time.sleep(0.3)
         return filled
     @staticmethod
+    @staticmethod
     def __is_placeholder(title, n):
         """标题是否为无信息占位符（第N集/第N话/Episode N/S01E02），非占位则视为已有真标题"""
         t = title.strip()
@@ -463,6 +464,7 @@ class MetaFiller(_PluginBase):
         ]
         return any(re.match(p, t) for p in pats)
 
+    @staticmethod
     def __ov_or_placeholder(text):
         t = (text or '').strip()
         return (not t) or t.startswith('暂无英文版的简介') or t.startswith('暂无简介')

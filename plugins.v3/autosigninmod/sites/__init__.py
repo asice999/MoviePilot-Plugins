@@ -106,33 +106,47 @@ class _ISiteSigninHandler(metaclass=ABCMeta):
     @staticmethod
     def _extract_reward(text: str) -> str:
         """
-        从签到返回文本中提取奖励信息（魔力值/积分/点数等）
+        从签到返回文本中提取奖励信息（魔力值/时魔/积分/点数等）。
+        优先匹配当日签到奖励（签到已得X / 签到成功获得X魔力值），
+        避免把「做种积分」等非签到字段当成奖励。
         :param text: 签到返回的HTML源码或JSON字符串
-        :return: 奖励描述字符串，如"获得100魔力值"，未提取到返回空字符串
+        :return: 奖励描述字符串，如"获得130魔力值"，未提取到返回空字符串
         """
         if not text:
             return ""
         plain = re.sub(r"<[^>]+>", "", text)
         plain = re.sub(r"\s+", " ", plain)
+        # 排除做种积分等非签到字段干扰（去掉「积分」字，防止被单位正则误匹配）
+        plain_clean = plain.replace("做种总积分", "做种合计").replace("做种积分", "做种值").replace("标种积分", "标种值")
         patterns = [
-            r"(?:本次|此次)?签到(?:成功)?[，,。]?(?:您)?(?:已)?获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|积分|猫粮|金币|能量|豆|魔力)",
-            r"获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|积分|猫粮|金币|能量|豆)",
+            # 1. 家园hdhome风格：签到已得X（默认魔力值/时魔）
+            r"签到已得(\d+(?:\.\d+)?)",
+            # 2. 签到成功获得X魔力值/时魔
+            r"(?:本次|此次)?签到(?:成功)?[，,。]?(?:您)?(?:已)?获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|时魔|积分|猫粮|金币|能量|豆|魔力)",
+            # 3. 获得X魔力值/时魔
+            r"获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|时魔|积分|猫粮|金币|能量|豆)",
+            # 4. integral JSON
             r"[\"']integral[\"']\s*[:=]\s*[\"']?(\d+(?:\.\d+)?)\s*(积分)?",
-            r"(\d+(?:\.\d+)?)\s*(?:个|点|克)?\s*(魔力值|积分|猫粮|金币|能量|豆)",
-            r"(魔力值|积分|猫粮|金币|能量|豆)\s*[+：:]\s*(\d+(?:\.\d+)?)",
+            # 5. 数字+单位
+            r"(\d+(?:\.\d+)?)\s*(?:个|点|克)?\s*(魔力值|时魔|积分|猫粮|金币|能量|豆)",
+            # 6. 单位+数字
+            r"(魔力值|时魔|积分|猫粮|金币|能量|豆)\s*[+：:]\s*(\d+(?:\.\d+)?)",
         ]
         for p in patterns:
-            m = re.search(p, plain)
+            m = re.search(p, plain_clean)
             if m:
-                if p == patterns[-1]:
+                if p == patterns[0]:
+                    # 签到已得X：只有数字，默认魔力值（时魔）
+                    val = m.group(1)
+                    unit = "魔力值"
+                elif p == patterns[-1]:
                     unit, val = m.group(1), m.group(2)
                 else:
-                    val, unit = m.group(1), m.group(2) or "积分"
+                    val, unit = m.group(1), m.group(2) or "魔力值"
                 if unit == "魔力":
                     unit = "魔力值"
                 return f"获得{val}{unit}"
         return ""
-
 
     @staticmethod
     def _reward_msg(text: str, default: str = "签到成功") -> str:

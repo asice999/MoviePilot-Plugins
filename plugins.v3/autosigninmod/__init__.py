@@ -39,7 +39,7 @@ class AutoSignInMod(_PluginBase):
     # 插件图标
     plugin_icon = "autosigninmod.png"
     # 插件版本
-    plugin_version = "2.9.6"
+    plugin_version = "2.9.7"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页
@@ -1233,14 +1233,16 @@ class AutoSignInMod(_PluginBase):
                         icon="mdi-calendar-check",
                         site_data=signin_site_data,
                         display_dates=display_dates,
-                        empty_text="暂无签到数据"
+                        empty_text="暂无签到数据",
+                        section_type="signin"
                     ),
                     self._build_status_section(
                         title="登录状态",
                         icon="mdi-login-variant",
                         site_data=login_site_data,
                         display_dates=display_dates,
-                        empty_text="暂无登录数据"
+                        empty_text="暂无登录数据",
+                        section_type="login"
                     )
                 ]
             }
@@ -1343,6 +1345,45 @@ class AutoSignInMod(_PluginBase):
             "label": "未记录",
             "sort": 2
         }
+
+    @staticmethod
+    def _extract_total_magic(text: str) -> str:
+        """
+        从状态文本中提取总时魔（总魔力值）。
+        文本格式如：登录成功，总时魔350,506.4 等级(士兵)User 分享率423.68
+        """
+        text = str(text or "")
+        m = re.search(r"总时魔\s*([\d,]+(?:\.\d+)?)", text)
+        if m:
+            return f"{m.group(1)} 时魔"
+        m = re.search(r"总魔力值\s*[:：]?\s*([\d,]+(?:\.\d+)?)", text)
+        if m:
+            return f"{m.group(1)} 魔力值"
+        return ""
+
+    @staticmethod
+    def _extract_level(text: str) -> str:
+        """
+        从状态文本中提取站点等级。
+        文本格式如：等级(士兵)User 或 等级: User 或 等级 User
+        """
+        text = str(text or "")
+        m = re.search(r"等级\s*[:：]?\s*([^\s，,。；;|]+)", text)
+        if m:
+            return m.group(1).strip()
+        return ""
+
+    @staticmethod
+    def _extract_ratio(text: str) -> str:
+        """
+        从状态文本中提取分享率。
+        文本格式如：分享率423.68 或 分享率: 1.235
+        """
+        text = str(text or "")
+        m = re.search(r"分享率\s*[:：]?\s*([\d.]+)", text)
+        if m:
+            return m.group(1)
+        return ""
 
     @staticmethod
     def _latest_record(records: list, date_label: str = None) -> dict:
@@ -1497,7 +1538,7 @@ class AutoSignInMod(_PluginBase):
         }
 
     @classmethod
-    def _build_status_section(cls, title: str, icon: str, site_data: dict, display_dates: list, empty_text: str) -> dict:
+    def _build_status_section(cls, title: str, icon: str, site_data: dict, display_dates: list, empty_text: str, section_type: str = "signin") -> dict:
         """
         构建签到或登录状态区块，使用按站点排列的紧凑矩阵展示最近状态。
         """
@@ -1545,15 +1586,16 @@ class AutoSignInMod(_PluginBase):
                 cls._build_status_table(
                     site_data=site_data,
                     display_dates=display_dates,
-                    empty_text=empty_text
+                    empty_text=empty_text,
+                    section_type=section_type
                 )
             ]
         }
 
     @classmethod
-    def _build_status_table(cls, site_data: dict, display_dates: list, empty_text: str) -> dict:
+    def _build_status_table(cls, site_data: dict, display_dates: list, empty_text: str, section_type: str = "signin") -> dict:
         """
-        构建按站点和日期交叉展示的状态表格。
+        构建按站点和日期交叉展示的状态表格。登录区块额外显示等级/分享率列。
         """
         if not site_data:
             return {
@@ -1588,15 +1630,32 @@ class AutoSignInMod(_PluginBase):
                     'class': 'text-center'
                 },
                 'text': '奖励'
-            },
-            {
-                'component': 'th',
-                'props': {
-                    'class': 'text-center'
-                },
-                'text': '操作'
             }
         ]
+        if section_type == "login":
+            table_headers.extend([
+                {
+                    'component': 'th',
+                    'props': {
+                        'class': 'text-center'
+                    },
+                    'text': '等级'
+                },
+                {
+                    'component': 'th',
+                    'props': {
+                        'class': 'text-center'
+                    },
+                    'text': '分享率'
+                }
+            ])
+        table_headers.append({
+            'component': 'th',
+            'props': {
+                'class': 'text-center'
+            },
+            'text': '操作'
+        })
         for day in display_dates:
             table_headers.append({
                 'component': 'th',
@@ -1612,7 +1671,9 @@ class AutoSignInMod(_PluginBase):
         )
         table_rows = []
         for site_name, records in sorted_sites:
-            table_rows.append(cls._build_status_row(site_name=site_name, records=records, display_dates=display_dates))
+            table_rows.append(cls._build_status_row(
+                site_name=site_name, records=records, display_dates=display_dates, section_type=section_type
+            ))
 
         return {
             'component': 'div',
@@ -1659,17 +1720,63 @@ class AutoSignInMod(_PluginBase):
         return status_meta.get("sort", 2), -latest_day.toordinal(), site_name
 
     @classmethod
-    def _build_status_row(cls, site_name: str, records: list, display_dates: list) -> dict:
+    def _build_status_row(cls, site_name: str, records: list, display_dates: list, section_type: str = "signin") -> dict:
         """
-        构建单个站点在状态矩阵中的一行。
+        构建单个站点在状态矩阵中的一行。登录区块额外显示总时魔/等级/分享率。
         """
         today_label = cls._date_label(day=display_dates[0]) if display_dates else ""
         today_record = cls._latest_record(records=records, date_label=today_label)
         today_status = today_record.get("status", "") if today_record else ""
         today_meta = cls._status_meta(today_status)
-        today_reward = _ISiteSigninHandler._extract_reward(today_status)
+        # 签到区块：奖励=当日签到奖励（_extract_reward 优先匹配「签到已得X」）
+        # 登录区块：奖励=总时魔，另取等级/分享率
+        if section_type == "login":
+            today_reward = cls._extract_total_magic(today_status)
+            today_level = cls._extract_level(today_status)
+            today_ratio = cls._extract_ratio(today_status)
+        else:
+            today_reward = _ISiteSigninHandler._extract_reward(today_status)
+            today_level = ""
+            today_ratio = ""
         # 今日失败/异常时显示重试按钮
         need_retry = today_meta.get("level") in ("error", "warning")
+
+        # 登录区块：额外列（等级/分享率）
+        extra_cells = []
+        if section_type == "login":
+            extra_cells = [
+                {
+                    'component': 'td',
+                    'props': {
+                        'class': 'autosigninmod-extra-cell'
+                    },
+                    'content': [
+                        {
+                            'component': 'span',
+                            'props': {
+                                'class': 'autosigninmod-reward' if today_level else 'autosigninmod-reward--none'
+                            },
+                            'text': today_level or "—"
+                        }
+                    ]
+                },
+                {
+                    'component': 'td',
+                    'props': {
+                        'class': 'autosigninmod-extra-cell'
+                    },
+                    'content': [
+                        {
+                            'component': 'span',
+                            'props': {
+                                'class': 'autosigninmod-reward' if today_ratio else 'autosigninmod-reward--none'
+                            },
+                            'text': today_ratio or "—"
+                        }
+                    ]
+                }
+            ]
+
         row_cells = [
             {
                 'component': 'td',
@@ -1724,6 +1831,7 @@ class AutoSignInMod(_PluginBase):
                     }
                 ]
             },
+            *extra_cells,
             {
                 'component': 'td',
                 'props': {
@@ -2269,6 +2377,50 @@ class AutoSignInMod(_PluginBase):
         return site_info.get("name"), message
 
     @staticmethod
+    def __login_meta(page_source: str, site_info: CommentedMap) -> str:
+        """
+        登录成功后从页面提取总时魔/等级/分享率，返回附加文本。
+        """
+        try:
+            parts = []
+            plain = re.sub(r"<[^>]+>", " ", page_source)
+            plain = re.sub(r"\s+", " ", plain)
+            m = re.search(r"魔力值\s*\[[^\]]*使用[^\]]*\]\s*[:：]?\s*([\d,]+(?:\.\d+)?)", plain)
+            if not m:
+                m = re.search(r"魔力值[^0-9]*?([\d,]+(?:\.\d+)?)", plain)
+            if m:
+                parts.append(f"总时魔{m.group(1)}")
+            m = re.search(r"分享率\s*[:：]?\s*([\d.]+)", plain)
+            if m:
+                parts.append(f"分享率{m.group(1)}")
+            # 等级：尽力从 userdetails 页提取
+            try:
+                site_url = site_info.get("url", "")
+                uid_url = ""
+                mu = re.search(r'userdetails\.php\?id=(\d+)', page_source)
+                if mu and site_url:
+                    base = site_url.rstrip('/')
+                    uid_url = f"{base}/userdetails.php?id={mu.group(1)}"
+                if uid_url:
+                    r = RequestUtils(
+                        cookies=site_info.get("cookie"),
+                        ua=site_info.get("ua"),
+                        proxies=settings.PROXY if site_info.get("proxy") else None,
+                        timeout=site_info.get("timeout") or 60
+                    ).get_res(url=uid_url)
+                    if r and r.status_code == 200:
+                        up = re.sub(r"<[^>]+>", " ", r.text)
+                        up = re.sub(r"\s+", " ", up)
+                        lm = re.search(r"等级\s*[:：]?\s*([^\s，,。；;|]+)", up)
+                        if lm:
+                            parts.append(f"等级{lm.group(1)}")
+            except Exception:
+                pass
+            return "，" + "，".join(parts) if parts else ""
+        except Exception:
+            return ""
+
+    @staticmethod
     def __login_base(site_info: CommentedMap) -> Tuple[bool, str]:
         """
         模拟登录通用处理
@@ -2304,7 +2456,7 @@ class AutoSignInMod(_PluginBase):
                         return False, f"无法通过Cloudflare！"
                     return False, f"仿真登录失败，Cookie已失效！"
                 else:
-                    return True, "模拟登录成功"
+                    return True, f"模拟登录成功{__login_meta(page_source, site_info)}"
             else:
                 res = RequestUtils(cookies=site_cookie,
                                    ua=ua,
@@ -2324,7 +2476,7 @@ class AutoSignInMod(_PluginBase):
                         return False, f"模拟登录失败，{msg}！"
                     else:
                         logger.info(f"{site} 模拟登录成功")
-                        return True, f"模拟登录成功"
+                        return True, f"模拟登录成功{__login_meta(res.text, site_info)}"
                 elif res is not None:
                     logger.warn(f"{site} 模拟登录失败，状态码：{res.status_code}")
                     return False, f"模拟登录失败，状态码：{res.status_code}！"

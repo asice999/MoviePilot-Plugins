@@ -1,166 +1,167 @@
 {
-  "MpMissingEpisodes": {
-    "name": "缺失剧集补齐（自用）",
-    "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
-    "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
-    "version": "1.0.1",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/mpmissingepisodes.png",
-    "author": "asice999",
-    "level": 1,
-    "release": true,
-    "system_version": ">=3.0.0",
-    "history": {
-      "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。",
-      "v1.0.1": "修复 _finish 签名缺 pending_notes 参数（4 参调用报错）"
-    }
-  },
-  "MetaFiller": {
-    "name": "缺失剧集元数据补全（自用）",
-    "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
-    "labels": "Emby,元数据,刮削,TMDB,缩略图",
-    "version": "1.3.2",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
-    "author": "asice999",
-    "level": 1,
-    "release": true,
-    "system_version": ">=3.0.0",
-    "history": {
-      "v1.3.2": "修复 __is_placeholder 方法丢失与 __ov_or_placeholder 缺 @staticmethod（扫描 16 部国漫全挂）",
-      "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
-      "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
-      "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
-    }
-  },
-  "CloudSubscribe": {
-    "name": "网盘订阅助手（自用）",
-    "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
-    "labels": "网盘,订阅,搜索,洗版,Emby",
-    "version": "1.3.5",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
-    "author": "asice999",
-    "level": 1,
-    "release": true,
-    "system_version": ">=3.0.0",
-    "history": {
-      "v1.3.3": "移除运行时依赖清单，避免启动期依赖安装检查；保留本地/在线切换兼容。",
-      "v1.3.2": "统一云端/本地身份逻辑，避免市场回退覆盖；依赖约束改为与现有环境兼容",
-      "v1.3.1": "115 客户端升级：支持 MP 配置 Token 复用与 Cookie 多客户端路由（P115ClientRouter），提升识别与播放稳定性",
-      "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
-    }
-  },
-  "nodeseeksign": {
-    "name": "NodeSeek论坛签到",
-    "description": "懒羊羊定制：自动完成NodeSeek论坛每日签到，支持随机奖励和自动重试功能",
-    "labels": "签到,NodeSeek,论坛",
-    "version": "2.1.2",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v2.1.2": "同步作者为自用，图标指向自建仓库，升级版本号。",
-      "v2.1.1": "移除运行时依赖清单并同步版本，避免启动期依赖检查干扰。",
-      "v2.1.0": "修复统计与通知：仅统计成功记录；已签到显示今日奖励与排名；签到记录解析更稳健",
-      "v2.0.0": "重构签到：时间验证兜底；始终拉取用户与奖励；简化解析；新增近N天收益统计；修复cloudscraper初始化",
-      "v1.6.0": "增加时间验证，规避签到成功但返回非JSON的情况",
-      "v1.5.0": "增强签到成功判断逻辑，规避签到成功但返回非JSON的情况",
-      "v1.4.0": "修复响应解析问题：优化非JSON响应处理、过滤NUL字符、增强签到成功判断逻辑优化业务语义解析",
-      "v1.3.0": "稳定性优化：新增统一请求适配(优先cloudscraper→curl_cffi→requests)、强制代理注入、随机延迟、完善请求头；支持成员ID，通知与页面展示用户信息(含头像)",
-      "v1.2.0": "尝试优化成功率，未测试",
-      "v1.0.0": "支持API方式签到，绕过CloudFlare防护，支持随机奖励和自动加鸡腿"
-    }
-  },
-  "nodeseekcheckin": {
-    "name": "NodeSeek签到自用版",
-    "description": "自用：NodeSeek每日签到（合并架构测试版，业务在 core/signer.py）",
-    "labels": "签到,NodeSeek,论坛,自用",
-    "version": "1.0.0",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v1.0.0": "首次发布。以合并架构（_PluginBase 壳 + core/signer.py 独立业务类）重构 NodeSeek 签到，验证分离式插件设计。"
-    }
-  },
-  "AutoSignInMod": {
-    "name": "自动签到魔改版",
-    "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。",
-    "labels": "签到,站点,Cookie,自动登录",
-    "version": "2.9.6",
-    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
-      "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获"
-    }
-  },
-  "SiteStatistic": {
-    "name": "站点数据统计（自用）",
-    "description": "自用：站点统计数据图表。",
-    "labels": "统计,站点,仪表板",
-    "version": "1.9.2",
-    "icon": "statistic.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
-    }
-  },
-  "SiteRefresh": {
-    "name": "站点自动更新（自用）",
-    "description": "自用：使用浏览器模拟登录站点获取Cookie和UA。支持站点下拉选择+账号/密码/TOTP二步验证密钥，5组凭据槽位。",
-    "labels": "站点,cookie,自动更新",
-    "version": "1.3",
-    "icon": "Chrome_A.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v1.2": "自用版：基于 MP 内置 v1.2，作者改为 asice999。"
-    }
-  },
-  "SiteAssessment": {
-    "name": "站点考核状态（自用）",
-    "description": "自用：自动获取站点考核情况并在仪表板显示，支持考核临近时发送通知。",
-    "labels": "考核,站点,仪表板",
-    "version": "2.1",
-    "icon": "statistic.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v2.1": "自用版：基于 bfjy2024 v2.1，作者改为 asice999。"
-    }
-  },
-  "SiteManager": {
-    "name": "站点多面板管理器",
-    "description": "自用：合并签到、统计、刷新、考核的多面板管理器",
-    "labels": "站点,面板,签到,统计,考核",
-    "version": "0.1.1",
-    "icon": "statistic.png",
-    "author": "asice999",
-    "level": 2,
-    "v2": true,
-    "history": {
-      "v0.1.0": "测试版：聚合 SiteRefresh / AutoSignIn / SiteStatistic / SiteAssessment 的多面板壳。",
-      "v0.1.1": "修复 __init__ 缺 super().__init__() 导致 plugindata 未初始化"
-    }
-  },
-  "TelecomMonitor": {
-    "name": "电信套餐监控",
-    "description": "监控中国电信手机套餐流量、语音、余额使用情况，每日自动查询并推送。",
-    "labels": "电信,套餐,流量,监控",
-    "version": "0.0.1",
-    "author": "asice999",
-    "level": 1,
-    "release": true,
-    "system_version": ">=3.0.0",
-    "history": {
-      "v0.0.1": "初版：电信套餐用量监控，支持手机号+密码自动登录、token 自动续期、每日定时查询与通知、Vue 微前端仪表盘。"
-    }
+ "MpMissingEpisodes": {
+  "name": "缺失剧集补齐（自用）",
+  "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
+  "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
+  "version": "1.0.1",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/mpmissingepisodes.png",
+  "author": "asice999",
+  "level": 1,
+  "release": true,
+  "system_version": ">=3.0.0",
+  "history": {
+   "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。",
+   "v1.0.1": "修复 _finish 签名缺 pending_notes 参数（4 参调用报错）"
   }
+ },
+ "MetaFiller": {
+  "name": "缺失剧集元数据补全（自用）",
+  "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
+  "labels": "Emby,元数据,刮削,TMDB,缩略图",
+  "version": "1.3.2",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
+  "author": "asice999",
+  "level": 1,
+  "release": true,
+  "system_version": ">=3.0.0",
+  "history": {
+   "v1.3.2": "修复 __is_placeholder 方法丢失与 __ov_or_placeholder 缺 @staticmethod（扫描 16 部国漫全挂）",
+   "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
+   "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
+   "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
+  }
+ },
+ "CloudSubscribe": {
+  "name": "网盘订阅助手（自用）",
+  "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
+  "labels": "网盘,订阅,搜索,洗版,Emby",
+  "version": "1.3.5",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
+  "author": "asice999",
+  "level": 1,
+  "release": true,
+  "system_version": ">=3.0.0",
+  "history": {
+   "v1.3.3": "移除运行时依赖清单，避免启动期依赖安装检查；保留本地/在线切换兼容。",
+   "v1.3.2": "统一云端/本地身份逻辑，避免市场回退覆盖；依赖约束改为与现有环境兼容",
+   "v1.3.1": "115 客户端升级：支持 MP 配置 Token 复用与 Cookie 多客户端路由（P115ClientRouter），提升识别与播放稳定性",
+   "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
+  }
+ },
+ "nodeseeksign": {
+  "name": "NodeSeek论坛签到",
+  "description": "懒羊羊定制：自动完成NodeSeek论坛每日签到，支持随机奖励和自动重试功能",
+  "labels": "签到,NodeSeek,论坛",
+  "version": "2.1.2",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v2.1.2": "同步作者为自用，图标指向自建仓库，升级版本号。",
+   "v2.1.1": "移除运行时依赖清单并同步版本，避免启动期依赖检查干扰。",
+   "v2.1.0": "修复统计与通知：仅统计成功记录；已签到显示今日奖励与排名；签到记录解析更稳健",
+   "v2.0.0": "重构签到：时间验证兜底；始终拉取用户与奖励；简化解析；新增近N天收益统计；修复cloudscraper初始化",
+   "v1.6.0": "增加时间验证，规避签到成功但返回非JSON的情况",
+   "v1.5.0": "增强签到成功判断逻辑，规避签到成功但返回非JSON的情况",
+   "v1.4.0": "修复响应解析问题：优化非JSON响应处理、过滤NUL字符、增强签到成功判断逻辑优化业务语义解析",
+   "v1.3.0": "稳定性优化：新增统一请求适配(优先cloudscraper→curl_cffi→requests)、强制代理注入、随机延迟、完善请求头；支持成员ID，通知与页面展示用户信息(含头像)",
+   "v1.2.0": "尝试优化成功率，未测试",
+   "v1.0.0": "支持API方式签到，绕过CloudFlare防护，支持随机奖励和自动加鸡腿"
+  }
+ },
+ "nodeseekcheckin": {
+  "name": "NodeSeek签到自用版",
+  "description": "自用：NodeSeek每日签到（合并架构测试版，业务在 core/signer.py）",
+  "labels": "签到,NodeSeek,论坛,自用",
+  "version": "1.0.0",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v1.0.0": "首次发布。以合并架构（_PluginBase 壳 + core/signer.py 独立业务类）重构 NodeSeek 签到，验证分离式插件设计。"
+  }
+ },
+ "AutoSignInMod": {
+  "name": "自动签到魔改版",
+  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率，签到表显示当日奖励。",
+  "labels": "签到,站点,Cookie,自动登录",
+  "version": "2.9.7",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
+   "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获",
+   "v2.9.7": "登录表新增总时魔/等级/分享率列；签到奖励优先提取「签到已得X」；修复做种积分误报签到奖励"
+  }
+ },
+ "SiteStatistic": {
+  "name": "站点数据统计（自用）",
+  "description": "自用：站点统计数据图表。",
+  "labels": "统计,站点,仪表板",
+  "version": "1.9.2",
+  "icon": "statistic.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
+  }
+ },
+ "SiteRefresh": {
+  "name": "站点自动更新（自用）",
+  "description": "自用：使用浏览器模拟登录站点获取Cookie和UA。支持站点下拉选择+账号/密码/TOTP二步验证密钥，5组凭据槽位。",
+  "labels": "站点,cookie,自动更新",
+  "version": "1.3",
+  "icon": "Chrome_A.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v1.2": "自用版：基于 MP 内置 v1.2，作者改为 asice999。"
+  }
+ },
+ "SiteAssessment": {
+  "name": "站点考核状态（自用）",
+  "description": "自用：自动获取站点考核情况并在仪表板显示，支持考核临近时发送通知。",
+  "labels": "考核,站点,仪表板",
+  "version": "2.1",
+  "icon": "statistic.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v2.1": "自用版：基于 bfjy2024 v2.1，作者改为 asice999。"
+  }
+ },
+ "SiteManager": {
+  "name": "站点多面板管理器",
+  "description": "自用：合并签到、统计、刷新、考核的多面板管理器",
+  "labels": "站点,面板,签到,统计,考核",
+  "version": "0.1.1",
+  "icon": "statistic.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v0.1.0": "测试版：聚合 SiteRefresh / AutoSignIn / SiteStatistic / SiteAssessment 的多面板壳。",
+   "v0.1.1": "修复 __init__ 缺 super().__init__() 导致 plugindata 未初始化"
+  }
+ },
+ "TelecomMonitor": {
+  "name": "电信套餐监控",
+  "description": "监控中国电信手机套餐流量、语音、余额使用情况，每日自动查询并推送。",
+  "labels": "电信,套餐,流量,监控",
+  "version": "0.0.1",
+  "author": "asice999",
+  "level": 1,
+  "release": true,
+  "system_version": ">=3.0.0",
+  "history": {
+   "v0.0.1": "初版：电信套餐用量监控，支持手机号+密码自动登录、token 自动续期、每日定时查询与通知、Vue 微前端仪表盘。"
+  }
+ }
 }

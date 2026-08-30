@@ -10,6 +10,32 @@ from threading import Event as ThreadEvent, Lock, RLock, local
 from typing import Optional, Any, List, Dict, Tuple, Callable
 
 import pytz
+
+# ---- 依赖自管理：容器更新/重建后自动补装，无需手动 pip ----
+_REQUIRED_DEPS = ["torf", "curl_cffi", "p115client", "qrcode"]
+
+def _ensure_deps() -> None:
+    import importlib.util, os, subprocess, sys
+    missing = [m for m in _REQUIRED_DEPS if importlib.util.find_spec(m) is None]
+    if not missing:
+        return
+    site = next((p for p in sys.path if p.endswith("site-packages")), None)
+    if not site:
+        return
+    for m in missing:
+        cmd = [sys.executable, "-m", "pip", "install", "--target", site, m]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=300)
+        except Exception:
+            cmd2 = ["/usr/local/bin/pip3", "install", "--target", site, m]
+            try:
+                subprocess.run(cmd2, capture_output=True, timeout=300)
+            except Exception:
+                pass
+
+_ensure_deps()
+# ---- 依赖自管理结束 ----
+
 from app.api.endpoints.plugin import register_plugin_api
 from app.core.config import settings
 from app.core.event import Event, eventmanager

@@ -39,7 +39,7 @@ class AutoSignInMod(_PluginBase):
     # 插件图标
     plugin_icon = "autosigninmod.png"
     # 插件版本
-    plugin_version = "2.9.5"
+    plugin_version = "2.9.6"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页
@@ -196,6 +196,13 @@ class AutoSignInMod(_PluginBase):
             "methods": ["GET"],
             "summary": "站点签到",
             "description": "使用站点域名签到站点",
+        }, {
+            "path": "/signin_by_name",
+            "endpoint": self.signin_by_name,
+            "methods": ["GET"],
+            "summary": "按站点名称签到",
+            "description": "使用站点名称签到站点（详情页重试按钮用）",
+            "auth": "bear",
         }]
 
     def get_service(self) -> List[Dict[str, Any]]:
@@ -1120,6 +1127,21 @@ class AutoSignInMod(_PluginBase):
                     width: 40px;
                     text-align: center;
                 }
+                .autosigninmod-reward-cell {
+                    min-width: 80px;
+                    text-align: center;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    color: rgb(var(--v-theme-success));
+                }
+                .autosigninmod-reward--none {
+                    color: rgba(var(--v-theme-on-surface), .32);
+                    font-weight: 400;
+                }
+                .autosigninmod-action-cell {
+                    width: 64px;
+                    text-align: center;
+                }
                 .autosigninmod-dot {
                     width: 22px;
                     height: 22px;
@@ -1179,6 +1201,12 @@ class AutoSignInMod(_PluginBase):
                     }
                     .autosigninmod-dot-cell {
                         width: 34px;
+                    }
+                    .autosigninmod-reward-cell {
+                        min-width: 64px;
+                    }
+                    .autosigninmod-action-cell {
+                        width: 52px;
                     }
                 }
                 """
@@ -1543,6 +1571,20 @@ class AutoSignInMod(_PluginBase):
                     'class': 'text-start'
                 },
                 'text': '今日'
+            },
+            {
+                'component': 'th',
+                'props': {
+                    'class': 'text-center'
+                },
+                'text': '奖励'
+            },
+            {
+                'component': 'th',
+                'props': {
+                    'class': 'text-center'
+                },
+                'text': '操作'
             }
         ]
         for day in display_dates:
@@ -1615,6 +1657,9 @@ class AutoSignInMod(_PluginBase):
         today_record = cls._latest_record(records=records, date_label=today_label)
         today_status = today_record.get("status", "") if today_record else ""
         today_meta = cls._status_meta(today_status)
+        today_reward = _ISiteSigninHandler._extract_reward(today_status)
+        # 今日失败/异常时显示重试按钮
+        need_retry = today_meta.get("level") in ("error", "warning")
         row_cells = [
             {
                 'component': 'td',
@@ -1651,6 +1696,48 @@ class AutoSignInMod(_PluginBase):
                             'prepend-icon': today_meta.get("icon")
                         },
                         'text': today_meta.get("label")
+                    }
+                ]
+            },
+            {
+                'component': 'td',
+                'props': {
+                    'class': 'autosigninmod-reward-cell'
+                },
+                'content': [
+                    {
+                        'component': 'span',
+                        'props': {
+                            'class': 'autosigninmod-reward' if today_reward else 'autosigninmod-reward--none'
+                        },
+                        'text': today_reward or "—"
+                    }
+                ]
+            },
+            {
+                'component': 'td',
+                'props': {
+                    'class': 'autosigninmod-action-cell'
+                },
+                'content': [
+                    {
+                        'component': 'VBtn',
+                        'props': {
+                            'size': 'x-small',
+                            'variant': 'tonal',
+                            'color': 'primary',
+                            'prepend-icon': 'mdi-refresh',
+                            'disabled': not need_retry,
+                            'title': f"重试 {site_name} 签到" if need_retry else "无需重试"
+                        },
+                        'text': '重试',
+                        'events': {
+                            'click': {
+                                'api': f"plugin/{cls.__name__}/signin_by_name",
+                                'method': 'get',
+                                'params': {'site_name': site_name}
+                            }
+                        }
                     }
                 ]
             }
@@ -1930,6 +2017,54 @@ class AutoSignInMod(_PluginBase):
                 success=True,
                 message=f"站点【{site_name}】{message or '签到成功'}"
             )
+
+    def signin_by_name(self, site_name: str) -> schemas.Response:
+        """
+        按站点名称签到（详情页重试按钮用）
+        """
+        site_info = self._find_site_by_name(site_name)
+        if not site_info:
+            return schemas.Response(success=False, message=f"站点【{site_name}】不存在")
+        try:
+            name, message = self.signin_site(site_info)
+            # 同步写入当天签到数据，详情页刷新可见最新状态
+            self._save_single_site_record(site_name=name, status=message)
+            return schemas.Response(success=True, message=f"站点【{name}】{message or '签到成功'}")
+        except Exception as e:
+            return schemas.Response(success=False, message=f"站点【{site_name}】签到失败：{str(e)}")
+
+    def _save_single_site_record(self, site_name: str, status: str) -> None:
+        """
+        将单站签到结果写入当天 plugindata，详情页即时展示。
+        """
+        today = datetime.now()
+        key = f"{today.month}月{today.day}日"
+        today_data = self.get_data(key)
+        record = {"site": site_name, "status": status}
+        if not today_data:
+            today_data = [record]
+        else:
+            if not isinstance(today_data, list):
+                today_data = [today_data]
+            # 同站点覆盖旧记录，避免重复行
+            today_data = [r for r in today_data if r.get("site") != site_name]
+            today_data.append(record)
+        self.save_data(key, today_data)
+
+    @staticmethod
+    def _find_site_by_name(site_name: str) -> Optional[dict]:
+        """
+        按站点名称查找站点信息。
+        """
+        # 从索引器查找
+        for site in SitesHelper().get_indexers():
+            if site.get("name") == site_name:
+                return site
+        # 从数据库站点查找
+        for site in SiteOper().list_order_by_pri():
+            if getattr(site, "name", None) == site_name:
+                return {"id": getattr(site, "id"), "name": site_name, "url": getattr(site, "url", "")}
+        return None
 
     def signin_site(self, site_info: CommentedMap) -> Tuple[str, str]:
         """

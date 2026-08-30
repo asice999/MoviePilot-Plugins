@@ -17,7 +17,7 @@ class SiteRefresh(_PluginBase):
     # 插件图标
     plugin_icon = "Chrome_A.png"
     # 插件版本
-    plugin_version = "1.2"
+    plugin_version = "1.3"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页
@@ -44,7 +44,21 @@ class SiteRefresh(_PluginBase):
         if config:
             self._enabled = config.get("enabled")
             self._notify = config.get("notify")
-            self._siteconf = str(config.get("siteconf")).split('\n')
+            # 兼容旧版文本域
+            self._siteconf = []
+            if config.get("siteconf"):
+                self._siteconf = [x.strip() for x in str(config.get("siteconf")).split('\n') if x.strip()]
+            # 新版结构化配置：5 组槽位
+            for i in range(1, 6):
+                domain = str(config.get(f"domain_{i}") or "").strip()
+                username = str(config.get(f"username_{i}") or "").strip()
+                password = str(config.get(f"password_{i}") or "").strip()
+                code = str(config.get(f"code_{i}") or "").strip()
+                if domain and username and password:
+                    item = f"{domain}|{username}|{password}"
+                    if code:
+                        item += f"|{code}"
+                    self._siteconf.append(item)
 
     def get_state(self) -> bool:
         return self._enabled
@@ -121,100 +135,138 @@ class SiteRefresh(_PluginBase):
         """
         拼装插件配置页面，需要返回两块数据：1、页面配置；2、数据结构
         """
-        return [
+        # 全部已配置站点
+        site_options = [{"title": site.name, "value": StringUtils.get_url_domain(site.url)}
+                        for site in SiteOper().list_order_by_pri()]
+        if not site_options:
+            site_options = [{"title": "无可用站点", "value": ""}]
+
+        # 开关区
+        content = [
             {
-                'component': 'VForm',
+                'component': 'VRow',
                 'content': [
                     {
-                        'component': 'VRow',
+                        'component': 'VCol',
+                        'props': {'cols': 12, 'md': 6},
                         'content': [
                             {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 6
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'enabled',
-                                            'label': '启用插件',
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 6
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'notify',
-                                            'label': '开启通知',
-                                        }
-                                    }
-                                ]
+                                'component': 'VSwitch',
+                                'props': {'model': 'enabled', 'label': '启用插件'}
                             }
                         ]
                     },
                     {
-                        'component': 'VRow',
+                        'component': 'VCol',
+                        'props': {'cols': 12, 'md': 6},
                         'content': [
                             {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextarea',
-                                        'props': {
-                                            'model': 'siteconf',
-                                            'label': '站点配置',
-                                            'rows': 5,
-                                            'placeholder': '每一行一个站点，配置方式：\n'
-                                                           '域名domain|用户名|用户密码(|二次验证秘钥)\n'
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VAlert',
-                                        'props': {
-                                            'type': 'info',
-                                            'variant': 'tonal',
-                                            'text': '站点签到提示Cookie过期时自动触发。'
-                                                    '不支持开启两步认证的站点。'
-                                                    '不是所有站点都支持，失败请手动更新。'
-                                        }
-                                    }
-                                ]
+                                'component': 'VSwitch',
+                                'props': {'model': 'notify', 'label': '开启通知'}
                             }
                         ]
                     }
                 ]
             }
-        ], {
-            "enabled": False,
-            "notify": False,
-            "siteconf": ""
-        }
+        ]
+        # 5 组站点凭据槽位
+        for i in range(1, 6):
+            rows = [
+                {
+                    'component': 'VCol',
+                    'props': {'cols': 12, 'md': 3},
+                    'content': [
+                        {
+                            'component': 'VSelect',
+                            'props': {
+                                'model': f'domain_{i}',
+                                'label': f'站点 {i}',
+                                'items': site_options,
+                                'clearable': True
+                            }
+                        }
+                    ]
+                },
+                {
+                    'component': 'VCol',
+                    'props': {'cols': 12, 'md': 3},
+                    'content': [
+                        {
+                            'component': 'VTextField',
+                            'props': {
+                                'model': f'username_{i}',
+                                'label': f'用户名 {i}',
+                                'placeholder': '登录账号'
+                            }
+                        }
+                    ]
+                },
+                {
+                    'component': 'VCol',
+                    'props': {'cols': 12, 'md': 3},
+                    'content': [
+                        {
+                            'component': 'VTextField',
+                            'props': {
+                                'model': f'password_{i}',
+                                'label': f'密码 {i}',
+                                'type': 'password',
+                                'autocomplete': 'new-password',
+                                'placeholder': '登录密码'
+                            }
+                        }
+                    ]
+                },
+                {
+                    'component': 'VCol',
+                    'props': {'cols': 12, 'md': 3},
+                    'content': [
+                        {
+                            'component': 'VTextField',
+                            'props': {
+                                'model': f'code_{i}',
+                                'label': f'二步验证密钥 {i}',
+                                'placeholder': 'TOTP密钥，选填'
+                            }
+                        }
+                    ]
+                }
+            ]
+            content.append({'component': 'VRow', 'content': rows})
+        # 提示区
+        content.append(
+            {
+                'component': 'VRow',
+                'content': [
+                    {
+                        'component': 'VCol',
+                        'props': {'cols': 12},
+                        'content': [
+                            {
+                                'component': 'VAlert',
+                                'props': {
+                                    'type': 'info',
+                                    'variant': 'tonal',
+                                    'text': '站点签到提示Cookie过期时自动触发。'
+                                            '支持二步验证站点（填TOTP密钥自动算动态码）。'
+                                            '不是所有站点都支持，失败请手动更新。'
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
+        data = {"enabled": False, "notify": False}
+        for i in range(1, 6):
+            data[f"domain_{i}"] = ""
+            data[f"username_{i}"] = ""
+            data[f"password_{i}"] = ""
+            data[f"code_{i}"] = ""
+        return [{
+            'component': 'VForm',
+            'content': content
+        }], data
 
     def get_page(self) -> List[dict]:
         pass

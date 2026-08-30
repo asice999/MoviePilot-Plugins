@@ -957,8 +957,18 @@ class AutoSignInMod(_PluginBase):
             date_str = data.get("date", "")
             site_day_key = f"{site_name}_{date_str}"
 
-            # 存储或更新记录（如有多条取最新）
-            site_day_records[site_day_key] = data
+            # 优先保留带具体状态文本的详细记录（如"签到成功，获得50魔力值"），
+            # 不让"签到-yyyy-mm-dd"通用记录（"已签到"/"需要重试"）覆盖奖励信息。
+            if site_day_key in site_day_records:
+                existing = site_day_records[site_day_key]
+                existing_status = existing.get("status", "")
+                new_status = data.get("status", "")
+                if existing_status in ("已签到", "需要重试", "登录成功", "登录需要重试"):
+                    site_day_records[site_day_key] = data
+                elif new_status not in ("已签到", "需要重试", "登录成功", "登录需要重试"):
+                    site_day_records[site_day_key] = data
+            else:
+                site_day_records[site_day_key] = data
 
         # 整理去重后的数据
         for key, record in site_day_records.items():

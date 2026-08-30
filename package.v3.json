@@ -3,14 +3,15 @@
     "name": "缺失剧集补齐（自用）",
     "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
     "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/mpmissingepisodes.png",
     "author": "asice999",
     "level": 1,
     "release": true,
     "system_version": ">=3.0.0",
     "history": {
-      "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。"
+      "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。",
+      "v1.0.1": "修复 _finish 签名缺 pending_notes 参数（4 参调用报错）"
     }
   },
   "MetaFiller": {
@@ -85,11 +86,14 @@
     "name": "自动签到魔改版",
     "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。",
     "labels": "签到,站点,Cookie,自动登录",
-    "version": "2.9.4",
+    "version": "2.9.5",
     "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
     "author": "asice999",
     "level": 2,
-    "v2": true
+    "v2": true,
+    "history": {
+      "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获"
+    }
   },
   "SiteStatistic": {
     "name": "站点数据统计（自用）",
@@ -134,13 +138,14 @@
     "name": "站点多面板管理器",
     "description": "自用：合并签到、统计、刷新、考核的多面板管理器",
     "labels": "站点,面板,签到,统计,考核",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "icon": "statistic.png",
     "author": "asice999",
     "level": 2,
     "v2": true,
     "history": {
-      "v0.1.0": "测试版：聚合 SiteRefresh / AutoSignIn / SiteStatistic / SiteAssessment 的多面板壳。"
+      "v0.1.0": "测试版：聚合 SiteRefresh / AutoSignIn / SiteStatistic / SiteAssessment 的多面板壳。",
+      "v0.1.1": "修复 __init__ 缺 super().__init__() 导致 plugindata 未初始化"
     }
   },
   "TelecomMonitor": {

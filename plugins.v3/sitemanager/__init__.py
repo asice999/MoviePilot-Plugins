@@ -16,7 +16,7 @@ from .core.assessment_service import SiteAssessment
 class SiteManager(_PluginBase):
     plugin_name = "站点多面板管理器"
     plugin_desc = "自用：合并签到、统计、刷新、考核的多面板管理器"
-    plugin_version = "0.1.0"
+    plugin_version = "0.1.1"
     plugin_icon = "statistic.png"
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"

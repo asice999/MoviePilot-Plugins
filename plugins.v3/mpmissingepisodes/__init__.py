@@ -40,7 +40,7 @@ class MpMissingEpisodes(_PluginBase):
     # 插件图标
     plugin_icon = "MdiTelevisionPlay"
     # 插件版本
-    plugin_version = "1.0.0"
+    plugin_version = "1.0.1"
     # 插件作者
     plugin_author = "asice999"
     author_url = "https://github.com/asice999"

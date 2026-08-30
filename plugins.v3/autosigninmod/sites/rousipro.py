@@ -90,7 +90,7 @@ class RousiPro(_ISiteSigninHandler):
             code = self._response_code(res)
             if res is not None and res.status_code == 200 and code == 0:
                 logger.info(f"{site} 签到成功")
-                return True, "签到成功"
+                return True, self._reward_msg(res.text)
             if res is not None and res.status_code == 400 and code == 1:
                 logger.info(f"{site} 今日已签到")
                 return True, "今日已签到"
@@ -110,7 +110,7 @@ class RousiPro(_ISiteSigninHandler):
         code = self._response_code(res)
         if res is not None and res.status_code == 200 and code == 0:
             logger.info(f"{site} 签到成功")
-            return True, "签到成功"
+            return True, self._reward_msg(res.text)
         elif res is not None and res.status_code == 400 and code == 1:
             logger.info(f"{site} 今日已签到")
             return True, "今日已签到"

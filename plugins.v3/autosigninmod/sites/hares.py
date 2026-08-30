@@ -80,7 +80,7 @@ class Hares(_ISiteSigninHandler):
         sign_dict = json.loads(sign_res.text)
         if sign_dict['code'] == 0:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(sign_res.text)
         else:
             logger.info(f"{site} 今日已签到")
             return True, '今日已签到'

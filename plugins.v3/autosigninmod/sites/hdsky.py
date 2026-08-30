@@ -127,7 +127,7 @@ class HDSky(_ISiteSigninHandler):
                 if res and res.status_code == 200:
                     if json.loads(res.text)["success"]:
                         logger.info(f"{site} 签到成功")
-                        return True, '签到成功'
+                        return True, self._reward_msg(res.text)
                     elif str(json.loads(res.text)["message"]) == "date_unmatch":
                         # 重复签到
                         logger.warn(f"{site} 重复成功")

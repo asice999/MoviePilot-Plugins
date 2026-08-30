@@ -222,7 +222,7 @@ class Tjupt(_ISiteSigninHandler):
                 self.__write_local_answer(exits_answers=exits_answers or {},
                                           captcha_img_hash=captcha_img_hash,
                                           answer=answer)
-            return True, '签到成功'
+            return True, self._reward_msg(sign_in_res.text)
         else:
             logger.error(f"{site} 签到失败，请到页面查看")
             return False, '签到失败，请到页面查看'

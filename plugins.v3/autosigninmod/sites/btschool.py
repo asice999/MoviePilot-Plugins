@@ -75,4 +75,4 @@ class BTSchool(_ISiteSigninHandler):
         # 签到成功
         if self._sign_text not in html_text:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(html_text)

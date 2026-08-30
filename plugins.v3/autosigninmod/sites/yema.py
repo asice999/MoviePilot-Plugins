@@ -44,7 +44,7 @@ class YemaPT(_ISiteSigninHandler):
                             ).get_res(urljoin(site_info.get('url'), "api/consumer/checkIn")))
 
         if res and res.json().get("success"):
-            return True, "签到成功"
+            return True, self._reward_msg(res.text)
         elif res is not None:
             return False, f"签到失败，签到结果：{res.json().get('errorMessage')}"
         else:

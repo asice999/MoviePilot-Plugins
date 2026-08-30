@@ -90,7 +90,7 @@ class TTG(_ISiteSigninHandler):
         sign_res.encoding = "utf-8"
         if self._success_text in sign_res.text:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(sign_res.text)
         if self._sign_text in sign_res.text:
             logger.info(f"{site} 今日已签到")
             return True, '今日已签到'

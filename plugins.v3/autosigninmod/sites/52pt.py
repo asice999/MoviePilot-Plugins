@@ -67,7 +67,7 @@ class Pt52(_ISiteSigninHandler):
         sign_text = sign_res.text
         if "签到成功" in sign_text:
             logger.info(f"{site} 签到成功")
-            return True, "签到成功"
+            return True, self._reward_msg(sign_text)
         elif "今天已经签过到了" in sign_text:
             logger.info(f"{site} 今日已签到")
             return True, "今日已签到"

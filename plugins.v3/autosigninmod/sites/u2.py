@@ -119,7 +119,7 @@ class U2(_ISiteSigninHandler):
         # sign_res.text = "<script type="text/javascript">window.location.href = 'showup.php';</script>"
         if self._success_text in sign_res.text:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(sign_res.text)
         else:
             logger.error(f"{site} 签到失败，未知原因")
             return False, '签到失败，未知原因'

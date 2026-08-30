@@ -101,3 +101,48 @@ class _ISiteSigninHandler(metaclass=ABCMeta):
             if re.search(str(regex), html_text):
                 return True
         return False
+
+
+    @staticmethod
+    def _extract_reward(text: str) -> str:
+        """
+        从签到返回文本中提取奖励信息（魔力值/积分/点数等）
+        :param text: 签到返回的HTML源码或JSON字符串
+        :return: 奖励描述字符串，如"获得100魔力值"，未提取到返回空字符串
+        """
+        if not text:
+            return ""
+        plain = re.sub(r"<[^>]+>", "", text)
+        plain = re.sub(r"\s+", " ", plain)
+        patterns = [
+            r"(?:本次|此次)?签到(?:成功)?[，,。]?(?:您)?(?:已)?获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|积分|猫粮|金币|能量|豆|魔力)",
+            r"获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|积分|猫粮|金币|能量|豆)",
+            r"[\"']integral[\"']\s*[:=]\s*[\"']?(\d+(?:\.\d+)?)\s*(积分)?",
+            r"(\d+(?:\.\d+)?)\s*(?:个|点|克)?\s*(魔力值|积分|猫粮|金币|能量|豆)",
+            r"(魔力值|积分|猫粮|金币|能量|豆)\s*[+：:]\s*(\d+(?:\.\d+)?)",
+        ]
+        for p in patterns:
+            m = re.search(p, plain)
+            if m:
+                if p == patterns[-1]:
+                    unit, val = m.group(1), m.group(2)
+                else:
+                    val, unit = m.group(1), m.group(2) or "积分"
+                if unit == "魔力":
+                    unit = "魔力值"
+                return f"获得{val}{unit}"
+        return ""
+
+
+    @staticmethod
+    def _reward_msg(text: str, default: str = "签到成功") -> str:
+        """
+        签到成功消息 + 奖励信息
+        :param text: 签到返回文本
+        :param default: 默认成功消息
+        :return: 如"签到成功，获得100魔力值"，无奖励则返回默认消息
+        """
+        reward = _ISiteSigninHandler._extract_reward(text)
+        if reward:
+            return f"{default}，{reward}"
+        return default

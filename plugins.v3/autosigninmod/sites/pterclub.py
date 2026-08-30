@@ -60,7 +60,7 @@ class PTerClub(_ISiteSigninHandler):
             # {"status":"1","data":" (签到已成功300)","message":"<p>这是您的第<b>237</b>次签到，
             # 已连续签到<b>237</b>天。</p><p>本次签到获得<b>300</b>克猫粮。</p>"}
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(html_text)
         else:
             # {"status":"0","data":"抱歉","message":"您今天已经签到过了，请勿重复刷新。"}
             logger.info(f"{site} 今日已签到")

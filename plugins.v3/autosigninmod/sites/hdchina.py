@@ -113,7 +113,7 @@ class HDChina(_ISiteSigninHandler):
         if sign_dict['state']:
             # {'state': 'success', 'signindays': 10, 'integral': 20}
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(sign_res.text)
         else:
             # {'state': False, 'msg': '不正确的CSRF / Incorrect CSRF token'}
             logger.error(f"{site} 签到失败，不正确的CSRF / Incorrect CSRF token")

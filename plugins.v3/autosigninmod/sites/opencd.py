@@ -124,7 +124,7 @@ class Opencd(_ISiteSigninHandler):
                 sign_dict = json.loads(sign_res.text)
                 if sign_dict['state']:
                     logger.info(f"{site} 签到成功")
-                    return True, '签到成功'
+                    return True, self._reward_msg(sign_res.text)
                 else:
                     logger.error(f"{site} 签到失败，签到接口返回 {sign_dict}")
                     return False, '签到失败'

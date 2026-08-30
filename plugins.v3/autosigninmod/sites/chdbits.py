@@ -138,7 +138,7 @@ class CHDBits(_ISiteSigninHandler):
                                           regexs=self._success_regex)
         if sign_status:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(sign_res.text)
         else:
             sign_status = self.sign_in_result(html_res=sign_res.text,
                                               regexs=self._sign_regex)

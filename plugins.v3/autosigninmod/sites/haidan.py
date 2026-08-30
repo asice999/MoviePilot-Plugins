@@ -67,7 +67,7 @@ class HaiDan(_ISiteSigninHandler):
                                           regexs=self._succeed_regex)
         if sign_status:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(html_text)
 
         logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
         return False, '签到失败'

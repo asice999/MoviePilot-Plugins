@@ -79,7 +79,7 @@ class HDUpt(_ISiteSigninHandler):
         # 判断是否已签到 sign_res.text = ".23"
         if len(list(map(int, re.findall(r"\d+", html_text)))) > 0:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(html_text)
 
         logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
         return False, '签到失败'

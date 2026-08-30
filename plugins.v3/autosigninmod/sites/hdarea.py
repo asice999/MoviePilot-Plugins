@@ -63,7 +63,7 @@ class HDArea(_ISiteSigninHandler):
         # '已连续签到278天，此次签到您获得了100魔力值奖励!'
         if self._success_text in html_res.text:
             logger.info(f"{site} 签到成功")
-            return True, '签到成功'
+            return True, self._reward_msg(html_res.text)
         if self._repeat_text in html_res.text:
             logger.info(f"{site} 今日已签到")
             return True, '今日已签到'

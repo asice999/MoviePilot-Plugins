@@ -18,6 +18,7 @@ from app.helper.module import ModuleHelper
 from app.helper.sites import SitesHelper
 from app.log import logger
 from app.plugins import _PluginBase
+from app.plugins.autosigninmod.sites import _ISiteSigninHandler
 from app.schemas.types import EventType, NotificationType
 from app.utils.http import RequestUtils
 from app.utils.site import SiteUtils
@@ -1996,8 +1997,8 @@ class AutoSignInMod(_PluginBase):
                     # 判断是否已签到
                     if re.search(r'已签|签到已得', page_source, re.IGNORECASE) \
                             or SiteUtils.is_checkin(page_source):
-                        return True, f"签到成功"
-                    return True, "仿真签到成功"
+                        return True, _ISiteSigninHandler._reward_msg(page_source)
+                    return True, _ISiteSigninHandler._reward_msg(page_source, "仿真签到成功")
             else:
                 res = RequestUtils(cookies=site_cookie,
                                    ua=ua,
@@ -2024,7 +2025,7 @@ class AutoSignInMod(_PluginBase):
                         return False, f"签到失败，{msg}！"
                     else:
                         logger.info(f"{site} 签到成功")
-                        return True, f"签到成功"
+                        return True, _ISiteSigninHandler._reward_msg(res.text)
                 elif res is not None:
                     logger.warn(f"{site} 签到失败，状态码：{res.status_code}")
                     return False, f"签到失败，状态码：{res.status_code}！"

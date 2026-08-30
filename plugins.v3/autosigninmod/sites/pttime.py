@@ -1,19 +1,21 @@
-import json
 from typing import Tuple
 
 from ruamel.yaml import CommentedMap
 
 from app.log import logger
-from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
+from app.plugins.autosigninmod.sites import _ISiteSigninHandler
 from app.utils.string import StringUtils
 
 
-class PTerClub(_ISiteSigninHandler):
+class PTTime(_ISiteSigninHandler):
     """
-    猫签到
+    PT时间签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "pterclub.com"
+    site_url = "pttime.org"
+
+    # 签到成功
+    _succeed_regex = ['签到成功']
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -38,12 +40,14 @@ class PTerClub(_ISiteSigninHandler):
         timeout = site_info.get("timeout")
 
         # 签到
-        html_text = self.get_page_source(url='https://pterclub.com/attendance-ajax.php',
+        # 签到返回：<html><head></head><body>签到成功</body></html>
+        html_text = self.get_page_source(url='https://www.pttime.org/attendance.php',
                                          cookie=site_cookie,
                                          ua=ua,
                                          proxy=proxy,
                                          render=render,
                                          timeout=timeout)
+
         if not html_text:
             logger.error(f"{site} 签到失败，请检查站点连通性")
             return False, '签到失败，请检查站点连通性'
@@ -51,17 +55,12 @@ class PTerClub(_ISiteSigninHandler):
         if "login.php" in html_text:
             logger.error(f"{site} 签到失败，Cookie已失效")
             return False, '签到失败，Cookie已失效'
-        try:
-            sign_dict = json.loads(html_text)
-        except Exception as e:
-            logger.error(f"{site} 签到失败，签到接口返回数据异常，错误信息：{str(e)}")
-            return False, '签到失败，签到接口返回数据异常'
-        if sign_dict['status'] == '1':
-            # {"status":"1","data":" (签到已成功300)","message":"<p>这是您的第<b>237</b>次签到，
-            # 已连续签到<b>237</b>天。</p><p>本次签到获得<b>300</b>克猫粮。</p>"}
+
+        sign_status = self.sign_in_result(html_res=html_text,
+                                          regexs=self._succeed_regex)
+        if sign_status:
             logger.info(f"{site} 签到成功")
             return True, '签到成功'
-        else:
-            # {"status":"0","data":"抱歉","message":"您今天已经签到过了，请勿重复刷新。"}
-            logger.info(f"{site} 今日已签到")
-            return True, '今日已签到'
+
+        logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
+        return False, '签到失败'

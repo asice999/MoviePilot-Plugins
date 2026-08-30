@@ -1,21 +1,19 @@
+import json
 from typing import Tuple
 
 from ruamel.yaml import CommentedMap
 
 from app.log import logger
-from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
+from app.plugins.autosigninmod.sites import _ISiteSigninHandler
 from app.utils.string import StringUtils
 
 
-class HaiDan(_ISiteSigninHandler):
+class PTerClub(_ISiteSigninHandler):
     """
-    海胆签到
+    猫签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "haidan.video"
-
-    # 签到成功
-    _succeed_regex = ['(?<=value=")已经打卡(?=")']
+    site_url = "pterclub.com"
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -40,16 +38,7 @@ class HaiDan(_ISiteSigninHandler):
         timeout = site_info.get("timeout")
 
         # 签到
-        # 签到页会重定向到index.php，由于302重定向特性，导致index.php没有携带cookie
-        self.get_page_source(url='https://www.haidan.video/signin.php',
-                             cookie=site_cookie,
-                             ua=ua,
-                             proxy=proxy,
-                             render=render,
-                             timeout=timeout)
-
-        # 重新携带cookie获取index.php查看签到结果
-        html_text = self.get_page_source(url='https://www.haidan.video/index.php',
+        html_text = self.get_page_source(url='https://pterclub.com/attendance-ajax.php',
                                          cookie=site_cookie,
                                          ua=ua,
                                          proxy=proxy,
@@ -62,12 +51,17 @@ class HaiDan(_ISiteSigninHandler):
         if "login.php" in html_text:
             logger.error(f"{site} 签到失败，Cookie已失效")
             return False, '签到失败，Cookie已失效'
-
-        sign_status = self.sign_in_result(html_res=html_text,
-                                          regexs=self._succeed_regex)
-        if sign_status:
+        try:
+            sign_dict = json.loads(html_text)
+        except Exception as e:
+            logger.error(f"{site} 签到失败，签到接口返回数据异常，错误信息：{str(e)}")
+            return False, '签到失败，签到接口返回数据异常'
+        if sign_dict['status'] == '1':
+            # {"status":"1","data":" (签到已成功300)","message":"<p>这是您的第<b>237</b>次签到，
+            # 已连续签到<b>237</b>天。</p><p>本次签到获得<b>300</b>克猫粮。</p>"}
             logger.info(f"{site} 签到成功")
             return True, '签到成功'
-
-        logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
-        return False, '签到失败'
+        else:
+            # {"status":"0","data":"抱歉","message":"您今天已经签到过了，请勿重复刷新。"}
+            logger.info(f"{site} 今日已签到")
+            return True, '今日已签到'

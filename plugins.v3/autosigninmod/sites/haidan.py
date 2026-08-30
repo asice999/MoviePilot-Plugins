@@ -2,24 +2,20 @@ from typing import Tuple
 
 from ruamel.yaml import CommentedMap
 
-from app.core.config import settings
 from app.log import logger
-from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
-from app.utils.http import RequestUtils
+from app.plugins.autosigninmod.sites import _ISiteSigninHandler
 from app.utils.string import StringUtils
 
 
-class HDArea(_ISiteSigninHandler):
+class HaiDan(_ISiteSigninHandler):
     """
-    好大签到
+    海胆签到
     """
-
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "hdarea.club"
+    site_url = "haidan.video"
 
     # 签到成功
-    _success_text = "此次签到您获得"
-    _repeat_text = "请不要重复签到哦"
+    _succeed_regex = ['(?<=value=")已经打卡(?=")']
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -39,33 +35,39 @@ class HDArea(_ISiteSigninHandler):
         site = site_info.get("name")
         site_cookie = site_info.get("cookie")
         ua = site_info.get("ua")
-        proxies = settings.PROXY if site_info.get("proxy") else None
+        proxy = site_info.get("proxy")
+        render = site_info.get("render")
         timeout = site_info.get("timeout")
 
-        # 获取页面html
-        data = {
-            'action': 'sign_in'
-        }
-        html_res = RequestUtils(cookies=site_cookie,
-                                ua=ua,
-                                proxies=proxies,
-                                timeout=timeout
-                                ).post_res(url="https://hdarea.club/sign_in.php", data=data)
-        if not html_res or html_res.status_code != 200:
+        # 签到
+        # 签到页会重定向到index.php，由于302重定向特性，导致index.php没有携带cookie
+        self.get_page_source(url='https://www.haidan.video/signin.php',
+                             cookie=site_cookie,
+                             ua=ua,
+                             proxy=proxy,
+                             render=render,
+                             timeout=timeout)
+
+        # 重新携带cookie获取index.php查看签到结果
+        html_text = self.get_page_source(url='https://www.haidan.video/index.php',
+                                         cookie=site_cookie,
+                                         ua=ua,
+                                         proxy=proxy,
+                                         render=render,
+                                         timeout=timeout)
+        if not html_text:
             logger.error(f"{site} 签到失败，请检查站点连通性")
             return False, '签到失败，请检查站点连通性'
 
-        if "login.php" in html_res.text:
+        if "login.php" in html_text:
             logger.error(f"{site} 签到失败，Cookie已失效")
             return False, '签到失败，Cookie已失效'
 
-        # 判断是否已签到
-        # '已连续签到278天，此次签到您获得了100魔力值奖励!'
-        if self._success_text in html_res.text:
+        sign_status = self.sign_in_result(html_res=html_text,
+                                          regexs=self._succeed_regex)
+        if sign_status:
             logger.info(f"{site} 签到成功")
             return True, '签到成功'
-        if self._repeat_text in html_res.text:
-            logger.info(f"{site} 今日已签到")
-            return True, '今日已签到'
-        logger.error(f"{site} 签到失败，签到接口返回 {html_res.text}")
+
+        logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
         return False, '签到失败'

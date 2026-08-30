@@ -36,7 +36,7 @@ class AutoSignInMod(_PluginBase):
     # 插件描述
     plugin_desc = "魔改版：自动模拟登录、签到站点，支持浏览器登录凭据管理与Cookie自动刷新。"
     # 插件图标
-    plugin_icon = "autosignin_mod.png"
+    plugin_icon = "autosigninmod.png"
     # 插件版本
     plugin_version = "2.9.4"
     # 插件作者
@@ -44,7 +44,7 @@ class AutoSignInMod(_PluginBase):
     # 作者主页
     author_url = "https://github.com/asice999"
     # 插件配置项ID前缀
-    plugin_config_prefix = "autosignin_mod_"
+    plugin_config_prefix = "autosigninmod_"
     # 加载顺序
     plugin_order = 0
     # 可使用的用户级别
@@ -106,7 +106,7 @@ class AutoSignInMod(_PluginBase):
         # 加载模块
         if self._enabled or self._onlyonce:
 
-            self._site_schema = ModuleHelper.load('app.plugins.autosignin_mod.sites',
+            self._site_schema = ModuleHelper.load('app.plugins.autosigninmod.sites',
                                                   filter_func=lambda _, obj: hasattr(obj, 'match'))
 
             # 立即运行一次
@@ -998,21 +998,21 @@ class AutoSignInMod(_PluginBase):
             {
                 'component': 'style',
                 'text': """
-                .autosignin_mod-page {
+                .autosigninmod-page {
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
                 }
-                .autosignin_mod-summary {
+                .autosigninmod-summary {
                     display: grid;
                     grid-template-columns: repeat(4, minmax(0, 1fr));
                     gap: 8px;
                 }
-                .autosignin_mod-stat {
+                .autosigninmod-stat {
                     min-width: 0;
                     padding: 10px 12px;
                 }
-                .autosignin_mod-stat__head {
+                .autosigninmod-stat__head {
                     display: flex;
                     align-items: center;
                     gap: 6px;
@@ -1025,17 +1025,17 @@ class AutoSignInMod(_PluginBase):
                     text-overflow: ellipsis;
                     white-space: nowrap;
                 }
-                .autosignin_mod-stat__head .v-icon {
+                .autosigninmod-stat__head .v-icon {
                     color: rgb(var(--app-card-accent-rgb));
                 }
-                .autosignin_mod-stat__value {
+                .autosigninmod-stat__value {
                     margin-top: 8px;
                     font-size: 1.25rem;
                     font-weight: 700;
                     line-height: 1;
                     letter-spacing: 0;
                 }
-                .autosignin_mod-stat__meta {
+                .autosigninmod-stat__meta {
                     margin-top: 4px;
                     color: rgba(var(--v-theme-on-surface), .56);
                     font-size: .72rem;
@@ -1044,45 +1044,45 @@ class AutoSignInMod(_PluginBase):
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
-                .autosignin_mod-section {
+                .autosigninmod-section {
                     min-width: 0;
                 }
-                .autosignin_mod-section-head {
+                .autosigninmod-section-head {
                     display: flex;
                     align-items: center;
                     gap: 8px;
                     min-height: 30px;
                     margin-bottom: 6px;
                 }
-                .autosignin_mod-section-title {
+                .autosigninmod-section-title {
                     font-size: .95rem;
                     font-weight: 700;
                     letter-spacing: 0;
                 }
-                .autosignin_mod-table-wrap {
+                .autosigninmod-table-wrap {
                     overflow-x: auto;
                     border: 1px solid rgba(var(--v-theme-on-surface), .08);
                     border-radius: 8px;
                 }
-                .autosignin_mod-table {
+                .autosigninmod-table {
                     min-width: 620px;
                 }
-                html[data-theme="transparent"] .autosignin_mod-table-wrap,
-                .v-theme--transparent .autosignin_mod-table-wrap {
+                html[data-theme="transparent"] .autosigninmod-table-wrap,
+                .v-theme--transparent .autosigninmod-table-wrap {
                     backdrop-filter: blur(var(--transparent-blur, 10px));
                     background-color: rgba(var(--v-theme-surface), 0) !important;
                 }
-                html[data-theme="transparent"] .autosignin_mod-table,
-                html[data-theme="transparent"] .autosignin_mod-table .v-table__wrapper,
-                html[data-theme="transparent"] .autosignin_mod-table table,
-                html[data-theme="transparent"] .autosignin_mod-table tbody tr,
-                .v-theme--transparent .autosignin_mod-table,
-                .v-theme--transparent .autosignin_mod-table .v-table__wrapper,
-                .v-theme--transparent .autosignin_mod-table table,
-                .v-theme--transparent .autosignin_mod-table tbody tr {
+                html[data-theme="transparent"] .autosigninmod-table,
+                html[data-theme="transparent"] .autosigninmod-table .v-table__wrapper,
+                html[data-theme="transparent"] .autosigninmod-table table,
+                html[data-theme="transparent"] .autosigninmod-table tbody tr,
+                .v-theme--transparent .autosigninmod-table,
+                .v-theme--transparent .autosigninmod-table .v-table__wrapper,
+                .v-theme--transparent .autosigninmod-table table,
+                .v-theme--transparent .autosigninmod-table tbody tr {
                     background-color: transparent !important;
                 }
-                .autosignin_mod-table th {
+                .autosigninmod-table th {
                     height: 34px !important;
                     padding: 0 8px !important;
                     color: rgba(var(--v-theme-on-surface), .62);
@@ -1090,15 +1090,15 @@ class AutoSignInMod(_PluginBase):
                     font-weight: 600 !important;
                     white-space: nowrap;
                 }
-                .autosignin_mod-table td {
+                .autosigninmod-table td {
                     height: 38px !important;
                     padding: 0 8px !important;
                     vertical-align: middle;
                 }
-                .autosignin_mod-table tbody tr:last-child td {
+                .autosigninmod-table tbody tr:last-child td {
                     border-bottom: 0 !important;
                 }
-                .autosignin_mod-site-name {
+                .autosigninmod-site-name {
                     max-width: 160px;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -1106,20 +1106,20 @@ class AutoSignInMod(_PluginBase):
                     font-weight: 600;
                     line-height: 1.2;
                 }
-                .autosignin_mod-site-meta {
+                .autosigninmod-site-meta {
                     margin-top: 2px;
                     color: rgba(var(--v-theme-on-surface), .52);
                     font-size: .68rem;
                     line-height: 1.1;
                 }
-                .autosignin_mod-status-cell {
+                .autosigninmod-status-cell {
                     min-width: 92px;
                 }
-                .autosignin_mod-dot-cell {
+                .autosigninmod-dot-cell {
                     width: 40px;
                     text-align: center;
                 }
-                .autosignin_mod-dot {
+                .autosigninmod-dot {
                     width: 22px;
                     height: 22px;
                     display: inline-flex;
@@ -1129,54 +1129,54 @@ class AutoSignInMod(_PluginBase):
                     border: 1px solid transparent;
                     font-weight: 700;
                 }
-                .autosignin_mod-dot .v-icon {
+                .autosigninmod-dot .v-icon {
                     opacity: 1;
                 }
-                .autosignin_mod-dot--success {
+                .autosigninmod-dot--success {
                     color: rgb(var(--v-theme-success));
                     background: rgba(var(--v-theme-success), .24);
                     border-color: rgba(var(--v-theme-success), .38);
                 }
-                .autosignin_mod-dot--warning {
+                .autosigninmod-dot--warning {
                     color: rgb(var(--v-theme-warning));
                     background: rgba(var(--v-theme-warning), .30);
                     border-color: rgba(var(--v-theme-warning), .48);
                 }
-                .autosignin_mod-dot--error {
+                .autosigninmod-dot--error {
                     color: rgb(var(--v-theme-error));
                     background: rgba(var(--v-theme-error), .26);
                     border-color: rgba(var(--v-theme-error), .42);
                 }
-                .autosignin_mod-dot--none {
+                .autosigninmod-dot--none {
                     color: rgba(var(--v-theme-on-surface), .68);
                     background: rgba(var(--v-theme-on-surface), .14);
                     border-color: rgba(var(--v-theme-on-surface), .22);
                 }
                 @media (max-width: 720px) {
-                    .autosignin_mod-page {
+                    .autosigninmod-page {
                         gap: 10px;
                     }
-                    .autosignin_mod-summary {
+                    .autosigninmod-summary {
                         grid-template-columns: repeat(2, minmax(0, 1fr));
                     }
-                    .autosignin_mod-stat {
+                    .autosigninmod-stat {
                         padding: 8px 10px;
                     }
-                    .autosignin_mod-stat__value {
+                    .autosigninmod-stat__value {
                         font-size: 1.08rem;
                     }
-                    .autosignin_mod-table {
+                    .autosigninmod-table {
                         min-width: 560px;
                     }
-                    .autosignin_mod-table th,
-                    .autosignin_mod-table td {
+                    .autosigninmod-table th,
+                    .autosigninmod-table td {
                         padding-left: 6px !important;
                         padding-right: 6px !important;
                     }
-                    .autosignin_mod-site-name {
+                    .autosigninmod-site-name {
                         max-width: 126px;
                     }
-                    .autosignin_mod-dot-cell {
+                    .autosigninmod-dot-cell {
                         width: 34px;
                     }
                 }
@@ -1185,7 +1185,7 @@ class AutoSignInMod(_PluginBase):
             {
                 'component': 'div',
                 'props': {
-                    'class': 'autosignin_mod-page'
+                    'class': 'autosigninmod-page'
                 },
                 'content': [
                     self._build_summary(signin_stats=signin_stats, login_stats=login_stats, days=len(date_list)),
@@ -1364,14 +1364,14 @@ class AutoSignInMod(_PluginBase):
         return {
             'component': 'div',
             'props': {
-                'class': 'autosignin_mod-stat app-card-shell app-card-colorful',
+                'class': 'autosigninmod-stat app-card-shell app-card-colorful',
                 'style': f'--app-card-accent-rgb: var(--v-theme-{color});'
             },
             'content': [
                 {
                     'component': 'div',
                     'props': {
-                        'class': 'autosignin_mod-stat__head'
+                        'class': 'autosigninmod-stat__head'
                     },
                     'content': [
                         {
@@ -1391,14 +1391,14 @@ class AutoSignInMod(_PluginBase):
                 {
                     'component': 'div',
                     'props': {
-                        'class': f'autosignin_mod-stat__value text-{color}'
+                        'class': f'autosigninmod-stat__value text-{color}'
                     },
                     'text': value
                 },
                 {
                     'component': 'div',
                     'props': {
-                        'class': 'autosignin_mod-stat__meta'
+                        'class': 'autosigninmod-stat__meta'
                     },
                     'text': meta
                 }
@@ -1423,7 +1423,7 @@ class AutoSignInMod(_PluginBase):
         return {
             'component': 'div',
             'props': {
-                'class': 'autosignin_mod-summary'
+                'class': 'autosigninmod-summary'
             },
             'content': [
                 cls._build_stat_item(
@@ -1465,13 +1465,13 @@ class AutoSignInMod(_PluginBase):
         return {
             'component': 'div',
             'props': {
-                'class': 'autosignin_mod-section'
+                'class': 'autosigninmod-section'
             },
             'content': [
                 {
                     'component': 'div',
                     'props': {
-                        'class': 'autosignin_mod-section-head'
+                        'class': 'autosigninmod-section-head'
                     },
                     'content': [
                         {
@@ -1485,7 +1485,7 @@ class AutoSignInMod(_PluginBase):
                         {
                             'component': 'span',
                             'props': {
-                                'class': 'autosignin_mod-section-title'
+                                'class': 'autosigninmod-section-title'
                             },
                             'text': title
                         },
@@ -1564,7 +1564,7 @@ class AutoSignInMod(_PluginBase):
         return {
             'component': 'div',
             'props': {
-                'class': 'autosignin_mod-table-wrap'
+                'class': 'autosigninmod-table-wrap'
             },
             'content': [
                 {
@@ -1572,7 +1572,7 @@ class AutoSignInMod(_PluginBase):
                     'props': {
                         'hover': True,
                         'density': 'compact',
-                        'class': 'autosignin_mod-table'
+                        'class': 'autosigninmod-table'
                     },
                     'content': [
                         {
@@ -1621,7 +1621,7 @@ class AutoSignInMod(_PluginBase):
                     {
                         'component': 'div',
                         'props': {
-                            'class': 'autosignin_mod-site-name',
+                            'class': 'autosigninmod-site-name',
                             'title': site_name
                         },
                         'text': site_name
@@ -1629,7 +1629,7 @@ class AutoSignInMod(_PluginBase):
                     {
                         'component': 'div',
                         'props': {
-                            'class': 'autosignin_mod-site-meta'
+                            'class': 'autosigninmod-site-meta'
                         },
                         'text': f"{len(records)} 条记录" if records else "暂无记录"
                     }
@@ -1638,7 +1638,7 @@ class AutoSignInMod(_PluginBase):
             {
                 'component': 'td',
                 'props': {
-                    'class': 'autosignin_mod-status-cell'
+                    'class': 'autosigninmod-status-cell'
                 },
                 'content': [
                     {
@@ -1660,7 +1660,7 @@ class AutoSignInMod(_PluginBase):
             row_cells.append({
                 'component': 'td',
                 'props': {
-                    'class': 'autosignin_mod-dot-cell'
+                    'class': 'autosigninmod-dot-cell'
                 },
                 'content': [
                     cls._build_status_dot(record=record, date_label=date_label)
@@ -1681,7 +1681,7 @@ class AutoSignInMod(_PluginBase):
         return {
             'component': 'span',
             'props': {
-                'class': f"autosignin_mod-dot autosignin_mod-dot--{status_meta.get('level')}",
+                'class': f"autosigninmod-dot autosigninmod-dot--{status_meta.get('level')}",
                 'title': f"{date_label} {status_meta.get('label')}"
             },
             'content': [

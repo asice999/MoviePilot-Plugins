@@ -2,20 +2,24 @@ from typing import Tuple
 
 from ruamel.yaml import CommentedMap
 
+from app.core.config import settings
 from app.log import logger
-from app.plugins.autosignin_mod.sites import _ISiteSigninHandler
+from app.plugins.autosigninmod.sites import _ISiteSigninHandler
+from app.utils.http import RequestUtils
 from app.utils.string import StringUtils
 
 
-class PTTime(_ISiteSigninHandler):
+class NexusHD(_ISiteSigninHandler):
     """
-    PT时间签到
+    NexusHD签到
     """
+
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "pttime.org"
+    site_url = "v6.nexushd.org"
 
     # 签到成功
-    _succeed_regex = ['签到成功']
+    _success_text = "本次签到获得"
+    _repeat_text = "你今天已经签到过了"
 
     @classmethod
     def match(cls, url: str) -> bool:
@@ -35,32 +39,34 @@ class PTTime(_ISiteSigninHandler):
         site = site_info.get("name")
         site_cookie = site_info.get("cookie")
         ua = site_info.get("ua")
-        proxy = site_info.get("proxy")
-        render = site_info.get("render")
+        proxies = settings.PROXY if site_info.get("proxy") else None
         timeout = site_info.get("timeout")
 
-        # 签到
-        # 签到返回：<html><head></head><body>签到成功</body></html>
-        html_text = self.get_page_source(url='https://www.pttime.org/attendance.php',
-                                         cookie=site_cookie,
-                                         ua=ua,
-                                         proxy=proxy,
-                                         render=render,
-                                         timeout=timeout)
-
-        if not html_text:
+        # 获取页面html
+        data = {
+            'action': 'post',
+            'content': ''
+        }
+        html_res = RequestUtils(cookies=site_cookie,
+                                ua=ua,
+                                proxies=proxies,
+                                timeout=timeout
+                                ).post_res(url="https://v6.nexushd.org/signin.php", data=data)
+        if not html_res or html_res.status_code != 200:
             logger.error(f"{site} 签到失败，请检查站点连通性")
             return False, '签到失败，请检查站点连通性'
 
-        if "login.php" in html_text:
+        if "login.php" in html_res.text:
             logger.error(f"{site} 签到失败，Cookie已失效")
             return False, '签到失败，Cookie已失效'
 
-        sign_status = self.sign_in_result(html_res=html_text,
-                                          regexs=self._succeed_regex)
-        if sign_status:
+        # 判断是否已签到
+        # '已连续签到278天，此次签到您获得了100魔力值奖励!'
+        if self._success_text in html_res.text:
             logger.info(f"{site} 签到成功")
             return True, '签到成功'
-
-        logger.error(f"{site} 签到失败，签到接口返回 {html_text}")
+        if self._repeat_text in html_res.text:
+            logger.info(f"{site} 今日已签到")
+            return True, '今日已签到'
+        logger.error(f"{site} 签到失败，签到接口返回 {html_res.text}")
         return False, '签到失败'

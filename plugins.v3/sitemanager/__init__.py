@@ -25,6 +25,7 @@ class SiteManager(_PluginBase):
     _scheduler = None
 
     def __init__(self):
+        super().__init__()
         self._refresh = SiteRefresh()
         self._signin = AutoSignIn()
         self._statistic = SiteStatistic()

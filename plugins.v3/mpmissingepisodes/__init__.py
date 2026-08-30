@@ -1210,7 +1210,7 @@ class MpMissingEpisodes(_PluginBase):
                     except Exception as e:
                         logger.error(f"下载失败 tmdb:{tmdbid} S{season}: {e}")
         return results
-    def _finish(self, missing: List[Dict], downloaded: Optional[List[str]]):
+    def _finish(self, missing: List[Dict], downloaded: Optional[List[str]], pending_notes: Optional[List] = None):
         """
         保存结果并通知
         """

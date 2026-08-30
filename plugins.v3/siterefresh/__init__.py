@@ -49,7 +49,7 @@ class SiteRefresh(_PluginBase):
             if config.get("siteconf"):
                 self._siteconf = [x.strip() for x in str(config.get("siteconf")).split('\n') if x.strip()]
             # 新版结构化配置：5 组槽位
-            for i in range(1, 6):
+            for i in range(1, 13):
                 domain = str(config.get(f"domain_{i}") or "").strip()
                 username = str(config.get(f"username_{i}") or "").strip()
                 password = str(config.get(f"password_{i}") or "").strip()
@@ -170,7 +170,7 @@ class SiteRefresh(_PluginBase):
             }
         ]
         # 5 组站点凭据槽位
-        for i in range(1, 6):
+        for i in range(1, 13):
             rows = [
                 {
                     'component': 'VCol',
@@ -233,6 +233,30 @@ class SiteRefresh(_PluginBase):
                 }
             ]
             content.append({'component': 'VRow', 'content': rows})
+        # 批量文本域（可选，支持任意数量站点）
+        content.append(
+            {
+                'component': 'VRow',
+                'content': [
+                    {
+                        'component': 'VCol',
+                        'props': {'cols': 12},
+                        'content': [
+                            {
+                                'component': 'VTextarea',
+                                'props': {
+                                    'model': 'siteconf',
+                                    'label': '批量配置（可选，与上方槽位合并生效）',
+                                    'rows': 4,
+                                    'placeholder': '每行一个站点：域名|用户名|密码(|TOTP密钥)\n'
+                                                   '例：piggo.me|asice999|密码|JBSWY3DPEHPK3PXP'
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
         # 提示区
         content.append(
             {
@@ -257,8 +281,8 @@ class SiteRefresh(_PluginBase):
                 ]
             }
         )
-        data = {"enabled": False, "notify": False}
-        for i in range(1, 6):
+        data = {"enabled": False, "notify": False, "siteconf": ""}
+        for i in range(1, 13):
             data[f"domain_{i}"] = ""
             data[f"username_{i}"] = ""
             data[f"password_{i}"] = ""

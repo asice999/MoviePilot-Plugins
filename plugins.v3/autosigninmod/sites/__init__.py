@@ -118,35 +118,64 @@ class _ISiteSigninHandler(metaclass=ABCMeta):
         plain = re.sub(r"\s+", " ", plain)
         # 排除做种积分等非签到字段干扰（去掉「积分」字，防止被单位正则误匹配）
         plain_clean = plain.replace("做种总积分", "做种合计").replace("做种积分", "做种值").replace("标种积分", "标种值")
+        units = "魔力值|时魔|积分|猫粮|金币|能量|豆|魔力|经验|点数"
         patterns = [
             # 1. 家园hdhome风格：签到已得X（默认魔力值/时魔）
             r"签到已得(\d+(?:\.\d+)?)",
-            # 2. 签到成功获得X魔力值/时魔
-            r"(?:本次|此次)?签到(?:成功)?[，,。]?(?:您)?(?:已)?获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|时魔|积分|猫粮|金币|能量|豆|魔力)",
-            # 3. 获得X魔力值/时魔
-            r"获得(\d+(?:\.\d+)?)(?:个|点|克)?(魔力值|时魔|积分|猫粮|金币|能量|豆)",
-            # 4. integral JSON
-            r"[\"']integral[\"']\s*[:=]\s*[\"']?(\d+(?:\.\d+)?)\s*(积分)?",
-            # 5. 数字+单位
-            r"(\d+(?:\.\d+)?)\s*(?:个|点|克)?\s*(魔力值|时魔|积分|猫粮|金币|能量|豆)",
-            # 6. 单位+数字
-            r"(魔力值|时魔|积分|猫粮|金币|能量|豆)\s*[+：:]\s*(\d+(?:\.\d+)?)",
+            # 2. 动词+数字+单位：签到成功，获得/奖励27个魔力值
+            r"(?:本次|此次|今日|每日)?(?:签到|打卡)?(?:成功)?[，,。！!、]?(?:您)?(?:已)?(?:获得|奖励|增加|加|收到)(?:了)?\s*(\d+(?:\.\d+)?)(?:个|点|克)?\s*(%s)" % units,
+            # 3. 动词+单位+数字：获得魔力值27 / 奖励 27 个魔力值
+            r"(?:获得|奖励|增加|加|收到)(?:了)?(%s)(?:个|点|克)?\s*(\d+(?:\.\d+)?)" % units,
+            # 4. 单位+分隔符+数字：魔力值：27 / 魔力值 +27
+            r"(%s)\s*[+：:]\s*(\d+(?:\.\d+)?)" % units,
+            # 5. 数字+单位（兜底）
+            r"(\d+(?:\.\d+)?)\s*(?:个|点|克)?\s*(%s)" % units,
         ]
-        for p in patterns:
+        # 先跑文本正则（索引：0=签到已得, 1=动词+数字+单位, 2=动词+单位+数字, 3=单位+分隔符+数字, 4=数字+单位兜底）
+        for i, p in enumerate(patterns):
             m = re.search(p, plain_clean)
             if m:
-                if p == patterns[0]:
-                    # 签到已得X：只有数字，默认魔力值（时魔）
+                if i == 0:
                     val = m.group(1)
                     unit = "魔力值"
-                elif p == patterns[-1]:
+                elif i in (2, 3):
+                    # 单位在前：group(1)=单位, group(2)=数字
                     unit, val = m.group(1), m.group(2)
                 else:
+                    # 数字在前：group(1)=数字, group(2)=单位
                     val, unit = m.group(1), m.group(2) or "魔力值"
                 if unit == "魔力":
                     unit = "魔力值"
                 return f"获得{val}{unit}"
-        return ""
+        # JSON 数值字段兜底（纯数值响应，如 {"bonus": 27}）
+        try:
+            import json
+            obj = json.loads(plain)
+            unit_map = {
+                "bonus": "积分", "integral": "积分", "points": "积分", "score": "积分",
+                "magic": "魔力值", "魔力": "魔力值", "时魔": "魔力值",
+                "gold": "金币", "coin": "金币", "energy": "能量", "bean": "豆",
+            }
+
+            def _find(obj):
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        kl = str(k).lower()
+                        hit = next((u for key, u in unit_map.items() if key in kl), None)
+                        if hit and isinstance(v, (int, float)) or (hit and isinstance(v, str) and str(v).replace(".", "", 1).isdigit()):
+                            return f"获得{str(v).replace('.0', '')}{hit}"
+                        r = _find(v)
+                        if r is not None:
+                            return r
+                elif isinstance(obj, list):
+                    for v in obj:
+                        r = _find(v)
+                        if r is not None:
+                            return r
+                return None
+            return _find(obj) or ""
+        except Exception:
+            return ""
 
     @staticmethod
     def _reward_msg(text: str, default: str = "签到成功") -> str:

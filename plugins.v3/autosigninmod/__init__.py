@@ -1774,7 +1774,7 @@ class AutoSignInMod(_PluginBase):
         ]
         # 登录区块：等级/分享率/时魔从 MP 内置库读取（与站点数据统计同源）
         if section_type == "login":
-            uds = []
+            ud = None
             try:
                 from app.db.site_oper import SiteOper
                 site_domain = ""
@@ -1783,10 +1783,13 @@ class AutoSignInMod(_PluginBase):
                         site_domain = StringUtils.get_url_domain(_s.get("url") or "")
                         break
                 if site_domain:
-                    uds = SiteOper().get_userdata_by_domain(domain=site_domain) or []
+                    # get_userdata_latest 按 updated_day 取各站最新一条（同 SiteStatistic）
+                    for _ud in (SiteOper().get_userdata_latest() or []):
+                        if _ud and _ud.domain == site_domain:
+                            ud = _ud
+                            break
             except Exception:
-                uds = []
-            ud = uds[0] if uds else None
+                ud = None
             row_cells.extend([
                 {
                     'component': 'td',

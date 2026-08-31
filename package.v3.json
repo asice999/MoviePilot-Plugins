@@ -163,5 +163,18 @@
   "history": {
    "v0.0.1": "初版：电信套餐用量监控，支持手机号+密码自动登录、token 自动续期、每日定时查询与通知、Vue 微前端仪表盘。"
   }
+ },
+ "GetMissingEpisodesMod": {
+  "name": "剧集管家·下载补齐自用版",
+  "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全。合并缺失剧集补齐能力：搜索规则组/黑名单/卡死种子检测/未来集订阅池。",
+  "labels": "剧集,缺失,订阅,下载,补全",
+  "version": "3.1.0",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知"
+  }
  }
 }

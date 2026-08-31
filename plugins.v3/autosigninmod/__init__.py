@@ -2204,6 +2204,20 @@ class AutoSignInMod(_PluginBase):
         domain = StringUtils.get_url_domain(site_info.get('url'))
         if state:
             SiteOper().success(domain=domain, seconds=seconds)
+            # 官方 parser 获取等级/分享率/时魔（与站点数据统计同源）
+            try:
+                from app.chain.site import SiteChain
+                ud = SiteChain().refresh_userdata(site=dict(site_info))
+                if ud:
+                    extra = []
+                    if ud.user_level: extra.append(f"等级{ud.user_level}")
+                    if ud.ratio: extra.append(f"分享率{ud.ratio}")
+                    if ud.bonus: extra.append(f"时魔{ud.bonus}")
+                    if ud.seeding: extra.append(f"做种{ud.seeding}")
+                    if extra:
+                        message = f"{message}（{'，'.join(extra)}）"
+            except Exception:
+                logger.debug(f"签到后 userdata 刷新失败：{traceback.format_exc()[-200:]}")
         else:
             SiteOper().fail(domain)
         return site_info.get("name"), message
@@ -2379,10 +2393,31 @@ class AutoSignInMod(_PluginBase):
     @staticmethod
     def __login_meta(page_source: str, site_info: CommentedMap) -> str:
         """
-        登录成功后从页面提取总时魔/等级/分享率，返回附加文本。
+        登录成功后提取总时魔/等级/分享率，返回附加文本。
+        优先走官方 SiteChain.refresh_userdata（userdetails 页 XPath 解析，与站点数据统计同源），
+        失败回退登录页正则。
         """
         try:
             parts = []
+            # 优先官方解析：等值字段 user_level/ratio/bonus（时魔）
+            try:
+                from app.chain.site import SiteChain
+                site_dict = dict(site_info) if site_info else {}
+                ud = SiteChain().refresh_userdata(site=site_dict)
+                if ud:
+                    if ud.user_level:
+                        parts.append(f"等级{ud.user_level}")
+                    if ud.ratio:
+                        parts.append(f"分享率{ud.ratio}")
+                    if ud.bonus:
+                        parts.append(f"时魔{ud.bonus}")
+                    if ud.seeding:
+                        parts.append(f"做种{ud.seeding}")
+                    if parts:
+                        return "，" + "，".join(parts)
+            except Exception:
+                logger.debug(f"官方 userdata 解析失败，回退正则：{traceback.format_exc()[-200:]}")
+            # 回退：登录页正则
             plain = re.sub(r"<[^>]+>", " ", page_source)
             plain = re.sub(r"\s+", " ", plain)
             m = re.search(r"魔力值\s*\[[^\]]*使用[^\]]*\]\s*[:：]?\s*([\d,]+(?:\.\d+)?)", plain)

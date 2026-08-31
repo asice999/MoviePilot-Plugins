@@ -1638,6 +1638,15 @@ class AutoSignInMod(_PluginBase):
                 },
                 'text': '奖励'
             })
+        elif section_type == "login":
+            for col in ('等级', '分享率', '时魔'):
+                table_headers.append({
+                    'component': 'th',
+                    'props': {
+                        'class': 'text-center'
+                    },
+                    'text': col
+                })
         for day in display_dates:
             table_headers.append({
                 'component': 'th',
@@ -1763,6 +1772,38 @@ class AutoSignInMod(_PluginBase):
                 ]
             }
         ]
+        # 登录区块：等级/分享率/时魔从 MP 内置库读取（与站点数据统计同源）
+        if section_type == "login":
+            uds = []
+            try:
+                from app.db.site_oper import SiteOper
+                site_domain = ""
+                for _s in (SiteOper().list_active() or []):
+                    if _s.get("name") == site_name:
+                        site_domain = StringUtils.get_url_domain(_s.get("url") or "")
+                        break
+                if site_domain:
+                    uds = SiteOper().get_userdata_by_domain(domain=site_domain) or []
+            except Exception:
+                uds = []
+            ud = uds[0] if uds else None
+            row_cells.extend([
+                {
+                    'component': 'td',
+                    'props': {'class': 'text-center'},
+                    'text': (ud.user_level or "—") if ud else "—"
+                },
+                {
+                    'component': 'td',
+                    'props': {'class': 'text-center'},
+                    'text': (str(ud.ratio) if getattr(ud, "ratio", None) else "—") if ud else "—"
+                },
+                {
+                    'component': 'td',
+                    'props': {'class': 'text-center'},
+                    'text': (str(ud.bonus) if getattr(ud, "bonus", None) else "—") if ud else "—"
+                }
+            ])
         # 签到区块：奖励列 = 当日签到获得的时魔
         if section_type == "signin":
             row_cells.append({

@@ -23,15 +23,17 @@ def _ensure_deps() -> None:
     if not site:
         return
     for m in missing:
-        cmd = [sys.executable, "-m", "pip", "install", "--target", site, m]
-        try:
-            subprocess.run(cmd, capture_output=True, timeout=300)
-        except Exception:
-            cmd2 = ["/usr/local/bin/pip3", "install", "--target", site, m]
+        cmds = (
+            [sys.executable, "-m", "pip", "install", "--target", site, m],
+            ["/usr/local/bin/pip3", "install", "--target", site, m],
+        )
+        for c in cmds:
             try:
-                subprocess.run(cmd2, capture_output=True, timeout=300)
+                r = subprocess.run(c, capture_output=True, timeout=300)
+                if r.returncode == 0:
+                    break
             except Exception:
-                pass
+                continue
 
 _ensure_deps()
 # ---- 依赖自管理结束 ----

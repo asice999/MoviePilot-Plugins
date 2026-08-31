@@ -22,8 +22,9 @@ from app.chain.download import DownloadChain
 from app.chain.search import SearchChain
 from app.domain.context import MediaInfo
 from app.domain.meta.metabase import MetaBase
+from app.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
-import time
+from uuid import uuid4
 
 
 
@@ -180,14 +181,14 @@ class SVGPaths:
         return paths.get(icon_name, [])
 
 
-class GetMissingEpisodesMod(_PluginBase):
-    plugin_name = "剧集管家·下载补齐自用版"
-    plugin_desc = "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全（合并缺失剧集补齐能力）"
-    plugin_icon = "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png"
-    plugin_version = "3.1.0"
-    plugin_author = "asice999"
-    author_url = "https://github.com/asice999"
-    plugin_config_prefix = "getmissingepisodesmod_"
+class GetMissingEpisodes(_PluginBase):
+    plugin_name = "剧集管家"
+    plugin_desc = "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅补全"
+    plugin_icon = "https://raw.githubusercontent.com/andyxu8023/MoviePilot-Plugins/main/icons/EpisodeNoExist.png"
+    plugin_version = "3.0.2"
+    plugin_author = "boeto，左岸"
+    author_url = "https://github.com/andyxu8023"
+    plugin_config_prefix = "getmissingepisodes_"
     plugin_order = 6
     auth_level = 2
 
@@ -201,7 +202,7 @@ class GetMissingEpisodesMod(_PluginBase):
     _tmdbChain: TmdbChain
     _msChain: MediaServerChain
     _msHelper: MediaServerHelper
-    _plugin_id = "GetMissingEpisodesMod"
+    _plugin_id = "GetMissingEpisodes"
     _scheduler = None
 
     # 配置属性
@@ -390,7 +391,7 @@ class GetMissingEpisodesMod(_PluginBase):
         if self._enabled and self._cron:
             return [
                 {
-                    "id": "GetMissingEpisodesMod",
+                    "id": "GetMissingEpisodes",
                     "name": f"{self.plugin_name}",
                     "trigger": CronTrigger.from_crontab(self._cron),
                     "func": self.__refresh,
@@ -400,7 +401,7 @@ class GetMissingEpisodesMod(_PluginBase):
         elif self._enabled:
             return [
                 {
-                    "id": "GetMissingEpisodesMod",
+                    "id": "GetMissingEpisodes",
                     "name": f"{self.plugin_name}",
                     "trigger": CronTrigger.from_crontab("0 8 * * *"),
                     "func": self.__refresh,
@@ -1218,7 +1219,7 @@ class GetMissingEpisodesMod(_PluginBase):
             logger.warning("未找到检查记录")
             return schemas.Response(success=False, message="未找到检查记录")
 
-        is_success, historys = GetMissingEpisodesMod.__remove_history_by_unique(historys, key)
+        is_success, historys = GetMissingEpisodes.__remove_history_by_unique(historys, key)
 
         if is_success:
             logger.info(f"删除检查记录 {key} 成功")
@@ -1761,7 +1762,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodesMod/add_subscribe_history",
+                        "api": "plugin/GetMissingEpisodes/add_subscribe_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1780,7 +1781,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodesMod/set_all_exist_history",
+                        "api": "plugin/GetMissingEpisodes/set_all_exist_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1799,7 +1800,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodesMod/toggle_skip_history",
+                        "api": "plugin/GetMissingEpisodes/toggle_skip_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1818,7 +1819,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodesMod/delete_history",
+                        "api": "plugin/GetMissingEpisodes/delete_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -2101,7 +2102,7 @@ class GetMissingEpisodesMod(_PluginBase):
         for icon_name in Icons:
             paths = SVGPaths.get_paths(icon_name)
             if paths:
-                icon_content[icon_name] = GetMissingEpisodesMod.__get_svg_content(color, paths)
+                icon_content[icon_name] = GetMissingEpisodes.__get_svg_content(color, paths)
         return icon_content
 
     @staticmethod
@@ -2144,7 +2145,7 @@ class GetMissingEpisodesMod(_PluginBase):
             },
             "events": {
                 "click": {
-                    "api": "plugin/GetMissingEpisodesMod/set_history_type",
+                    "api": "plugin/GetMissingEpisodes/set_history_type",
                     "method": "get",
                     "params": {
                         "history_type": history_type,
@@ -2268,7 +2269,7 @@ class GetMissingEpisodesMod(_PluginBase):
 
         content = list(
             map(
-                lambda s: GetMissingEpisodesMod.__get_historys_statistic_content(
+                lambda s: GetMissingEpisodes.__get_historys_statistic_content(
                     title=str(s["title"]),
                     value=str(s["value"]),
                     icon_name=Icons(s["icon_name"]),
@@ -2468,8 +2469,46 @@ class GetMissingEpisodesMod(_PluginBase):
 
         return self._download_missing_episodes(tmdbid, title, no_exists, tv_no_exist_info.get("path"))
 
+    def _search_cloud_resources(self, title: str, media_type: str, season: int, latest_season: int, limit: int = 10) -> bool:
+        """优先让 CloudSubscribe 搜网盘并尝试转存。"""
+        try:
+            from app.plugins.cloudsubscribe.core.services.platform import PlatformIntegrationService
+            plugin = PluginManager().running_plugins.get("CloudSubscribe")
+            if not plugin:
+                return False
+            platform_service = plugin.__dict__.get("_plugin_components", {}).get(PlatformIntegrationService)
+            if not platform_service:
+                return False
+            session_id = f"getmissingepisodesmod:{uuid4().hex}"
+            result = platform_service.search_platform_resources(
+                session_id, None, title, media_type or "", season or 0, latest_season or 0, limit
+            )
+            if not isinstance(result, dict) or not result.get("success"):
+                return False
+            candidates = result.get("recommended_candidate_ids") or [
+                c.get("candidate_id") for c in (result.get("candidates") or [])[:3] if c.get("candidate_id")
+            ]
+            if not candidates:
+                return False
+            selected = platform_service.select_platform_resources(session_id, result.get("search_id", ""), candidates)
+            if selected.get("success"):
+                logger.info(f"CloudSubscribe 命中并转存成功：{title}，候选={len(candidates)}")
+                return True
+            logger.info(f"CloudSubscribe 命中但转存失败：{selected.get('message')}")
+        except Exception as e:
+            logger.warning(f"CloudSubscribe 搜索失败，回退站点搜索：{e}")
+        return False
+
     def _download_missing_episodes(self, tmdbid: int, title: str, no_exists: Dict, save_path: str = None) -> bool:
         """对单部剧集的缺失季逐季搜索批量下载，返回是否全部成功/无需下载。"""
+        if self._search_cloud_resources(
+            title=title,
+            media_type=str(no_exists.get("type") or ""),
+            season=int(no_exists.get("season") or 0),
+            latest_season=int(no_exists.get("latest_season") or 0),
+            limit=10,
+        ):
+            return True
         search_chain = SearchChain()
         download_chain = DownloadChain()
         use_sub_rules = bool(self._auto_download and self._use_subscribe_rules)

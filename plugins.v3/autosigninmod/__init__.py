@@ -1639,7 +1639,7 @@ class AutoSignInMod(_PluginBase):
                 'text': '奖励'
             })
         elif section_type == "login":
-            for col in ('等级', '分享率', '时魔'):
+            for col in ('等级', '分享率', '魔力值'):
                 table_headers.append({
                     'component': 'th',
                     'props': {
@@ -1778,9 +1778,11 @@ class AutoSignInMod(_PluginBase):
             try:
                 from app.db.site_oper import SiteOper
                 site_domain = ""
+                _name = lambda o: (o.get("name") if isinstance(o, dict) else getattr(o, "name", None))
+                _url = lambda o: (o.get("url") if isinstance(o, dict) else getattr(o, "url", ""))
                 for _s in (SiteOper().list_active() or []):
-                    if _s.get("name") == site_name:
-                        site_domain = StringUtils.get_url_domain(_s.get("url") or "")
+                    if _name(_s) == site_name:
+                        site_domain = StringUtils.get_url_domain(_url(_s) or "")
                         break
                 if site_domain:
                     # get_userdata_latest 按 updated_day 取各站最新一条（同 SiteStatistic）

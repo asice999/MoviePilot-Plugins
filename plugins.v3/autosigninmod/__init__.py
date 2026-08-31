@@ -2291,19 +2291,27 @@ class AutoSignInMod(_PluginBase):
         if site_module and hasattr(site_module, "login"):
             try:
                 state, message = site_module().login(site_info)
-                # 登录模块路径不经过 __login_meta，补官方 parser 数据（等级/分享率/时魔/做种）
+                # 登录模块路径不经过 __login_meta，补站点数据（等级/分享率/时魔/做种）
+                # 优先读 MP 内置库（与站点数据统计同源，零网络），库中无记录再实时解析
                 if state:
                     try:
-                        from app.chain.site import SiteChain
-                        ud = SiteChain().refresh_userdata(site=dict(site_info))
+                        extra = []
+                        ud = self.__userdata_from_db(site_info)
                         if ud:
-                            extra = []
                             if ud.user_level: extra.append(f"等级{ud.user_level}")
                             if ud.ratio: extra.append(f"分享率{ud.ratio}")
                             if ud.bonus: extra.append(f"总时魔{ud.bonus}")
                             if ud.seeding: extra.append(f"做种{ud.seeding}")
-                            if extra:
-                                message = f"{message}，{'，'.join(extra)}"
+                        else:
+                            from app.chain.site import SiteChain
+                            ud = SiteChain().refresh_userdata(site=dict(site_info))
+                            if ud:
+                                if ud.user_level: extra.append(f"等级{ud.user_level}")
+                                if ud.ratio: extra.append(f"分享率{ud.ratio}")
+                                if ud.bonus: extra.append(f"总时魔{ud.bonus}")
+                                if ud.seeding: extra.append(f"做种{ud.seeding}")
+                        if extra:
+                            message = f"{message}，{'，'.join(extra)}"
                     except Exception:
                         pass
             except Exception as e:
@@ -2329,7 +2337,29 @@ class AutoSignInMod(_PluginBase):
             SiteOper().fail(domain)
         return site_info.get("name"), message
 
-    @staticmethod
+    def __userdata_from_db(self, site_info: CommentedMap):
+        """
+        优先从 MP 内置 siteuserdata 库读取站点用户数据（等级/分享率/时魔/做种），
+        与站点数据统计插件同源（官方 parser 从 userdetails 页 XPath 解析入库）。
+        库中无对应 domain 记录时返回 None，由调用方回退实时解析。
+        """
+        try:
+            if not site_info:
+                return None
+            from app.db.models.siteuserdata import SiteUserData
+            domain = StringUtils.get_url_domain(site_info.get("url") or "")
+            if not domain:
+                return None
+            latest = SiteOper().get_userdata_latest()
+            if not latest:
+                return None
+            for ud in latest:
+                if ud and ud.domain == domain:
+                    return ud
+            return None
+        except Exception:
+            return None
+
     def __login_meta(page_source: str, site_info: CommentedMap) -> str:
         """
         登录成功后提取总时魔/等级/分享率，返回附加文本。
@@ -2339,10 +2369,13 @@ class AutoSignInMod(_PluginBase):
         try:
             parts = []
             # 优先官方解析：等值字段 user_level/ratio/bonus（时魔）
+            # 先读 MP 内置库（与站点数据统计同源，零网络），库中无记录再实时解析
             try:
                 from app.chain.site import SiteChain
-                site_dict = dict(site_info) if site_info else {}
-                ud = SiteChain().refresh_userdata(site=site_dict)
+                ud = self.__userdata_from_db(site_info) if site_info else None
+                if not ud:
+                    site_dict = dict(site_info) if site_info else {}
+                    ud = SiteChain().refresh_userdata(site=site_dict)
                 if ud:
                     if ud.user_level:
                         parts.append(f"等级{ud.user_level}")

@@ -22,7 +22,7 @@ from app.chain.download import DownloadChain
 from app.chain.search import SearchChain
 from app.domain.context import MediaInfo
 from app.domain.meta.metabase import MetaBase
-from app.plugin import PluginManager
+from app.core.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
 from uuid import uuid4
 
@@ -2480,21 +2480,29 @@ class GetMissingEpisodes(_PluginBase):
             if not platform_service:
                 return False
             session_id = f"getmissingepisodesmod:{uuid4().hex}"
-            result = platform_service.search_platform_resources(
-                session_id, None, title, media_type or "", season or 0, latest_season or 0, limit
-            )
-            if not isinstance(result, dict) or not result.get("success"):
-                return False
-            candidates = result.get("recommended_candidate_ids") or [
-                c.get("candidate_id") for c in (result.get("candidates") or [])[:3] if c.get("candidate_id")
+            search_args = [
+                (None, title),
+                (None, f"{title} 最新季" if latest_season else title),
             ]
-            if not candidates:
-                return False
-            selected = platform_service.select_platform_resources(session_id, result.get("search_id", ""), candidates)
-            if selected.get("success"):
-                logger.info(f"CloudSubscribe 命中并转存成功：{title}，候选={len(candidates)}")
-                return True
-            logger.info(f"CloudSubscribe 命中但转存失败：{selected.get('message')}")
+            for subscribe_id, search_title in search_args:
+                result = platform_service.search_platform_resources(
+                    session_id, subscribe_id, search_title, media_type or "", season or 0, latest_season or 0, limit
+                )
+                if not isinstance(result, dict) or not result.get("success"):
+                    continue
+                if int(result.get("subscribe_id") or 0) <= 0:
+                    logger.info(f"CloudSubscribe 命中但未绑定订阅，继续尝试识别：{title}")
+                    continue
+                candidates = result.get("recommended_candidate_ids") or [
+                    c.get("candidate_id") for c in (result.get("candidates") or [])[:3] if c.get("candidate_id")
+                ]
+                if not candidates:
+                    continue
+                selected = platform_service.select_platform_resources(session_id, result.get("search_id", ""), candidates)
+                if selected.get("success"):
+                    logger.info(f"CloudSubscribe 命中并转存成功：{title}，候选={len(candidates)}")
+                    return True
+                logger.info(f"CloudSubscribe 命中但转存失败：{selected.get('message')}")
         except Exception as e:
             logger.warning(f"CloudSubscribe 搜索失败，回退站点搜索：{e}")
         return False

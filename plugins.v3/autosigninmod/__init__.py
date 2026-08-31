@@ -1379,16 +1379,17 @@ class AutoSignInMod(_PluginBase):
         return ""
 
     @staticmethod
-    def _extract_ratio(text: str) -> str:
+    def _extract_recent_activity(text: str) -> str:
         """
-        从状态文本中提取分享率。
-        文本格式如：分享率423.68 或 分享率: 1.235
+        从状态文本中提取最近动向。
         """
-        text = str(text or "")
-        m = re.search(r"分享率\s*[:：]?\s*([\d.]+)", text)
+        text = re.sub(r"<[^>]+>", " ", str(text or ""))
+        text = re.sub(r"\s+", " ", text)
+        m = re.search(r"(?:最近动向|最近活动|最近访问)\s*[:：]?\s*([^，,。；;|]{1,120})", text)
         if m:
-            return m.group(1)
+            return m.group(1).strip()
         return ""
+
 
     @staticmethod
     def _latest_record(records: list, date_label: str = None) -> dict:
@@ -1639,7 +1640,7 @@ class AutoSignInMod(_PluginBase):
                 'text': '奖励'
             })
         elif section_type == "login":
-            for col in ('等级', '分享率', '魔力值'):
+            for col in ('等级', '分享率', '魔力值', '最近动向'):
                 table_headers.append({
                     'component': 'th',
                     'props': {
@@ -1807,6 +1808,11 @@ class AutoSignInMod(_PluginBase):
                     'component': 'td',
                     'props': {'class': 'text-center'},
                     'text': (str(ud.bonus) if getattr(ud, "bonus", None) else "—") if ud else "—"
+                },
+                {
+                    'component': 'td',
+                    'props': {'class': 'text-center'},
+                    'text': (cls.__recent_activity_from_userdetails(site_info)[:32] if cls.__recent_activity_from_userdetails(site_info) else "—")
                 }
             ])
         # 签到区块：奖励列 = 当日签到获得的时魔
@@ -2356,6 +2362,8 @@ class AutoSignInMod(_PluginBase):
                                 if ud.ratio: extra.append(f"分享率{ud.ratio}")
                                 if ud.bonus: extra.append(f"总时魔{ud.bonus}")
                                 if ud.seeding: extra.append(f"做种{ud.seeding}")
+                        ra = self.__recent_activity_from_userdetails(site_info, message)
+                        if ra: extra.append(f"最近动向{ra}")
                         if extra:
                             message = f"{message}，{'，'.join(extra)}"
                     except Exception:
@@ -2406,7 +2414,33 @@ class AutoSignInMod(_PluginBase):
         except Exception:
             return None
 
-    def __login_meta(page_source: str, site_info: CommentedMap) -> str:
+    def __recent_activity_from_userdetails(site_info: CommentedMap, page_source: str = "") -> str:
+        """
+        从 userdetails 页提取最近动向。
+        """
+        try:
+            site_url = str(site_info.get("url") or "").rstrip('/')
+            if not site_url:
+                return ""
+            mu = re.search(r'userdetails\.php\?id=(\d+)', page_source or "")
+            if not mu:
+                return ""
+            uid_url = f"{site_url}/userdetails.php?id={mu.group(1)}"
+            r = RequestUtils(
+                cookies=site_info.get("cookie"),
+                ua=site_info.get("ua"),
+                proxies=settings.PROXY if site_info.get("proxy") else None,
+                timeout=site_info.get("timeout") or 60
+            ).get_res(url=uid_url)
+            if not r or r.status_code != 200:
+                return ""
+            up = re.sub(r"<[^>]+>", " ", r.text)
+            up = re.sub(r"\s+", " ", up)
+            m = re.search(r"(?:最近动向|最近活动|最近访问)\s*[:：]?\s*([^，,。；;|]{1,120})", up)
+            return m.group(1).strip() if m else ""
+        except Exception:
+            return ""
+
         """
         登录成功后提取总时魔/等级/分享率，返回附加文本。
         优先走官方 SiteChain.refresh_userdata（userdetails 页 XPath 解析，与站点数据统计同源），
@@ -2431,8 +2465,7 @@ class AutoSignInMod(_PluginBase):
                         parts.append(f"总时魔{ud.bonus}")
                     if ud.seeding:
                         parts.append(f"做种{ud.seeding}")
-                    if parts:
-                        return "，" + "，".join(parts)
+                    # 先保留基础字段，后续继续抓 userdetails 页最近动向
             except Exception:
                 logger.debug(f"官方 userdata 解析失败，回退正则：{traceback.format_exc()[-200:]}")
             # 回退：登录页正则
@@ -2464,9 +2497,13 @@ class AutoSignInMod(_PluginBase):
                     if r and r.status_code == 200:
                         up = re.sub(r"<[^>]+>", " ", r.text)
                         up = re.sub(r"\s+", " ", up)
-                        lm = re.search(r"等级\s*[:：]?\s*([^\s，,。；;|]+)", up)
-                        if lm:
-                            parts.append(f"等级{lm.group(1)}")
+                        rm = re.search(r"最近动向\s*[:：]?\s*([^，,。；;|]{1,120})", up)
+                        if rm:
+                            parts.append(f"最近动向{rm.group(1).strip()}")
+                        else:
+                            ra = self._extract_recent_activity(up)
+                            if ra:
+                                parts.append(f"最近动向{ra}")
             except Exception:
                 pass
             return "，" + "，".join(parts) if parts else ""

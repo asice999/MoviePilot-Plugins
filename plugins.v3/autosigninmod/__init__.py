@@ -219,10 +219,15 @@ class AutoSignInMod(_PluginBase):
         if self._enabled and self._cron:
             try:
                 if str(self._cron).strip().count(" ") == 4:
+                    # 5 位标准 cron 表达式；分钟位为 * 时强制改 0（否则每小时每分钟都触发）
+                    cron_str = str(self._cron).strip()
+                    if cron_str.split()[0] == "*":
+                        cron_str = f"0 {cron_str.split(maxsplit=1)[1]}"
+                        logger.warning(f"自动签到魔改版 cron 分钟位为通配符，已强制改为 0：{cron_str}")
                     return [{
                         "id": "AutoSignInMod",
                         "name": "自动签到魔改版服务",
-                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "trigger": CronTrigger.from_crontab(cron_str),
                         "func": self.sign_in,
                         "kwargs": {}
                     }]
@@ -1303,7 +1308,7 @@ class AutoSignInMod(_PluginBase):
                 "level": "error",
                 "color": "error",
                 "icon": "mdi-cookie-off",
-                "label": status_text or "Cookie失效",
+                "label": "签到失败",
                 "sort": 0
             }
         if "失败" in status_text or "错误" in status_text:
@@ -1311,7 +1316,7 @@ class AutoSignInMod(_PluginBase):
                 "level": "error",
                 "color": "error",
                 "icon": "mdi-alert-circle",
-                "label": status_text or "失败",
+                "label": "失败",
                 "sort": 0
             }
         if "重试" in status_text:
@@ -1319,7 +1324,7 @@ class AutoSignInMod(_PluginBase):
                 "level": "warning",
                 "color": "warning",
                 "icon": "mdi-refresh",
-                "label": status_text or "需要重试",
+                "label": "需要重试",
                 "sort": 1
             }
         if "成功" in status_text or "已签到" in status_text:
@@ -1327,7 +1332,7 @@ class AutoSignInMod(_PluginBase):
                 "level": "success",
                 "color": "success",
                 "icon": "mdi-check-circle",
-                "label": status_text or "成功",
+                "label": "签到成功",
                 "sort": 3
             }
         if status_text:
@@ -1368,7 +1373,7 @@ class AutoSignInMod(_PluginBase):
         文本格式如：等级(士兵)User 或 等级: User 或 等级 User
         """
         text = str(text or "")
-        m = re.search(r"等级\s*[:：]?\s*([^\s，,。；;|]+)", text)
+        m = re.search(r"等级\s*[:：]?\s*([^，,。；;|]+)", text)
         if m:
             return m.group(1).strip()
         return ""
@@ -1623,39 +1628,16 @@ class AutoSignInMod(_PluginBase):
                     'class': 'text-start'
                 },
                 'text': '今日'
-            },
-            {
+            }
+        ]
+        if section_type == "signin":
+            table_headers.append({
                 'component': 'th',
                 'props': {
                     'class': 'text-center'
                 },
                 'text': '奖励'
-            }
-        ]
-        if section_type == "login":
-            table_headers.extend([
-                {
-                    'component': 'th',
-                    'props': {
-                        'class': 'text-center'
-                    },
-                    'text': '等级'
-                },
-                {
-                    'component': 'th',
-                    'props': {
-                        'class': 'text-center'
-                    },
-                    'text': '分享率'
-                }
-            ])
-        table_headers.append({
-            'component': 'th',
-            'props': {
-                'class': 'text-center'
-            },
-            'text': '操作'
-        })
+            })
         for day in display_dates:
             table_headers.append({
                 'component': 'th',
@@ -1741,42 +1723,6 @@ class AutoSignInMod(_PluginBase):
         # 今日失败/异常时显示重试按钮
         need_retry = today_meta.get("level") in ("error", "warning")
 
-        # 登录区块：额外列（等级/分享率）
-        extra_cells = []
-        if section_type == "login":
-            extra_cells = [
-                {
-                    'component': 'td',
-                    'props': {
-                        'class': 'autosigninmod-extra-cell'
-                    },
-                    'content': [
-                        {
-                            'component': 'span',
-                            'props': {
-                                'class': 'autosigninmod-reward' if today_level else 'autosigninmod-reward--none'
-                            },
-                            'text': today_level or "—"
-                        }
-                    ]
-                },
-                {
-                    'component': 'td',
-                    'props': {
-                        'class': 'autosigninmod-extra-cell'
-                    },
-                    'content': [
-                        {
-                            'component': 'span',
-                            'props': {
-                                'class': 'autosigninmod-reward' if today_ratio else 'autosigninmod-reward--none'
-                            },
-                            'text': today_ratio or "—"
-                        }
-                    ]
-                }
-            ]
-
         row_cells = [
             {
                 'component': 'td',
@@ -1812,11 +1758,14 @@ class AutoSignInMod(_PluginBase):
                             'color': today_meta.get("color"),
                             'prepend-icon': today_meta.get("icon")
                         },
-                        'text': today_meta.get("label")
+                        'text': "登录成功" if section_type == "login" and today_meta.get("level") == "success" else today_meta.get("label")
                     }
                 ]
-            },
-            {
+            }
+        ]
+        # 签到区块：奖励列 = 当日签到获得的时魔
+        if section_type == "signin":
+            row_cells.append({
                 'component': 'td',
                 'props': {
                     'class': 'autosigninmod-reward-cell'
@@ -1830,47 +1779,36 @@ class AutoSignInMod(_PluginBase):
                         'text': today_reward or "—"
                     }
                 ]
-            },
-            *extra_cells,
-            {
-                'component': 'td',
-                'props': {
-                    'class': 'autosigninmod-action-cell'
-                },
-                'content': [
-                    {
-                        'component': 'VBtn',
-                        'props': {
-                            'size': 'x-small',
-                            'variant': 'tonal',
-                            'color': 'primary',
-                            'prepend-icon': 'mdi-refresh',
-                            'disabled': not need_retry,
-                            'title': f"重试 {site_name} 签到" if need_retry else "无需重试"
-                        },
-                        'text': '重试',
-                        'events': {
-                            'click': {
-                                'api': f"plugin/{cls.__name__}/signin_by_name",
-                                'method': 'get',
-                                'params': {'site_name': site_name}
-                            }
-                        }
-                    }
-                ]
-            }
-        ]
+            })
         for day in display_dates:
             date_label = cls._date_label(day=day)
             record = cls._latest_record(records=records, date_label=date_label)
+            content = [cls._build_status_dot(record=record, date_label=date_label)]
+            # 最新日期点：签到失败/异常时附重试按钮
+            if section_type == "signin" and day == display_dates[0] and need_retry:
+                content.append({
+                    'component': 'VBtn',
+                    'props': {
+                        'size': 'x-small',
+                        'variant': 'tonal',
+                        'color': 'primary',
+                        'prepend-icon': 'mdi-refresh',
+                        'title': f"重试 {site_name} 签到"
+                    },
+                    'events': {
+                        'click': {
+                            'api': f"plugin/{cls.__name__}/signin_by_name",
+                            'method': 'get',
+                            'params': {'site_name': site_name}
+                        }
+                    }
+                })
             row_cells.append({
                 'component': 'td',
                 'props': {
                     'class': 'autosigninmod-dot-cell'
                 },
-                'content': [
-                    cls._build_status_dot(record=record, date_label=date_label)
-                ]
+                'content': content
             })
         return {
             'component': 'tr',
@@ -2204,20 +2142,6 @@ class AutoSignInMod(_PluginBase):
         domain = StringUtils.get_url_domain(site_info.get('url'))
         if state:
             SiteOper().success(domain=domain, seconds=seconds)
-            # 官方 parser 获取等级/分享率/时魔（与站点数据统计同源）
-            try:
-                from app.chain.site import SiteChain
-                ud = SiteChain().refresh_userdata(site=dict(site_info))
-                if ud:
-                    extra = []
-                    if ud.user_level: extra.append(f"等级{ud.user_level}")
-                    if ud.ratio: extra.append(f"分享率{ud.ratio}")
-                    if ud.bonus: extra.append(f"时魔{ud.bonus}")
-                    if ud.seeding: extra.append(f"做种{ud.seeding}")
-                    if extra:
-                        message = f"{message}（{'，'.join(extra)}）"
-            except Exception:
-                logger.debug(f"签到后 userdata 刷新失败：{traceback.format_exc()[-200:]}")
         else:
             SiteOper().fail(domain)
         return site_info.get("name"), message
@@ -2367,6 +2291,21 @@ class AutoSignInMod(_PluginBase):
         if site_module and hasattr(site_module, "login"):
             try:
                 state, message = site_module().login(site_info)
+                # 登录模块路径不经过 __login_meta，补官方 parser 数据（等级/分享率/时魔/做种）
+                if state:
+                    try:
+                        from app.chain.site import SiteChain
+                        ud = SiteChain().refresh_userdata(site=dict(site_info))
+                        if ud:
+                            extra = []
+                            if ud.user_level: extra.append(f"等级{ud.user_level}")
+                            if ud.ratio: extra.append(f"分享率{ud.ratio}")
+                            if ud.bonus: extra.append(f"总时魔{ud.bonus}")
+                            if ud.seeding: extra.append(f"做种{ud.seeding}")
+                            if extra:
+                                message = f"{message}，{'，'.join(extra)}"
+                    except Exception:
+                        pass
             except Exception as e:
                 traceback.print_exc()
                 state, message = False, f"模拟登录失败：{str(e)}"
@@ -2410,7 +2349,7 @@ class AutoSignInMod(_PluginBase):
                     if ud.ratio:
                         parts.append(f"分享率{ud.ratio}")
                     if ud.bonus:
-                        parts.append(f"时魔{ud.bonus}")
+                        parts.append(f"总时魔{ud.bonus}")
                     if ud.seeding:
                         parts.append(f"做种{ud.seeding}")
                     if parts:

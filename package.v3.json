@@ -85,14 +85,15 @@
  },
  "AutoSignInMod": {
   "name": "自动签到魔改版",
-  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率，签到表显示当日奖励。",
+  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率/最近动向，签到表显示当日奖励。",
   "labels": "签到,站点,Cookie,自动登录",
-  "version": "2.9.7",
+  "version": "2.9.8",
   "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
   "author": "asice999",
   "level": 2,
   "v2": true,
   "history": {
+   "v2.9.8": "修复登录通知最近动向NameError（__login_meta静态方法内调用name-mangling）；登录表补全最近动向",
    "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
    "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获",
    "v2.9.7": "登录表新增总时魔/等级/分享率列；签到奖励优先提取「签到已得X」；修复做种积分误报签到奖励"

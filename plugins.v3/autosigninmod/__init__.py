@@ -35,11 +35,13 @@ class AutoSignInMod(_PluginBase):
     # 插件名称
     plugin_name = "自动签到魔改版"
     # 插件描述
+    # Changelog:
+# 2026-09-01: 修复 __login_meta name-mangling bug（staticmethod 内双下划线调用被 Python 按全局找，全站登录失败）；改名 _login_meta + 类名限定调用
     plugin_desc = "魔改版：自动模拟登录、签到站点，支持浏览器登录凭据管理与Cookie自动刷新。"
     # 插件图标
     plugin_icon = "autosigninmod.png"
     # 插件版本
-    plugin_version = "2.9.7"
+    plugin_version = "2.9.8"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页
@@ -1385,11 +1387,22 @@ class AutoSignInMod(_PluginBase):
         """
         text = re.sub(r"<[^>]+>", " ", str(text or ""))
         text = re.sub(r"\s+", " ", text)
-        m = re.search(r"(?:最近动向|最近活动|最近访问)\s*[:：]?\s*([^，,。；;|]{1,120})", text)
+        m = re.search(r"(?:最近动向|最近活动|最近访问)\s*[:：]?\s*([^，,。；;|]{1,80})", text)
         if m:
             return m.group(1).strip()
         return ""
 
+    @staticmethod
+    def _extract_ratio(text: str) -> str:
+        """
+        从状态文本中提取分享率。
+        文本格式如：分享率423.68 或 分享率: 1.235
+        """
+        text = str(text or "")
+        m = re.search(r"分享率\s*[:：]?\s*([\d.]+)", text)
+        if m:
+            return m.group(1)
+        return ""
 
     @staticmethod
     def _latest_record(records: list, date_label: str = None) -> dict:
@@ -1812,7 +1825,7 @@ class AutoSignInMod(_PluginBase):
                 {
                     'component': 'td',
                     'props': {'class': 'text-center'},
-                    'text': (cls.__recent_activity_from_userdetails(site_info)[:32] if cls.__recent_activity_from_userdetails(site_info) else "—")
+                    'text': (cls._extract_recent_activity(today_status)[:32] if cls._extract_recent_activity(today_status) else "—")
                 }
             ])
         # 签到区块：奖励列 = 当日签到获得的时魔
@@ -2194,6 +2207,13 @@ class AutoSignInMod(_PluginBase):
         domain = StringUtils.get_url_domain(site_info.get('url'))
         if state:
             SiteOper().success(domain=domain, seconds=seconds)
+            # 最近动向：userdetails 页实时抓取，拼进消息文本（不影响原返回结构）
+            try:
+                ra = self.__fetch_recent_activity(site_info)
+                if ra:
+                    message = f"{message}，{ra}"
+            except Exception:
+                pass
         else:
             SiteOper().fail(domain)
         return site_info.get("name"), message
@@ -2362,8 +2382,13 @@ class AutoSignInMod(_PluginBase):
                                 if ud.ratio: extra.append(f"分享率{ud.ratio}")
                                 if ud.bonus: extra.append(f"总时魔{ud.bonus}")
                                 if ud.seeding: extra.append(f"做种{ud.seeding}")
-                        ra = self.__recent_activity_from_userdetails(site_info, message)
-                        if ra: extra.append(f"最近动向{ra}")
+                        # 最近动向：userdetails 页实时抓取（读库无此字段）
+                        try:
+                            ra = self.__fetch_recent_activity(site_info)
+                            if ra:
+                                extra.append(ra)
+                        except Exception:
+                            pass
                         if extra:
                             message = f"{message}，{'，'.join(extra)}"
                     except Exception:
@@ -2391,6 +2416,31 @@ class AutoSignInMod(_PluginBase):
             SiteOper().fail(domain)
         return site_info.get("name"), message
 
+    def __fetch_recent_activity(self, site_info: CommentedMap) -> str:
+        """
+        从 userdetails 页抓取最近动向，失败静默返回空串。
+        读库拿 userid，无 userid 或抓取失败均返回 ""，不影响签到/登录主流程。
+        """
+        try:
+            ud = self.__userdata_from_db(site_info)
+            uid = getattr(ud, "userid", "") or "" if ud else ""
+            site_url = str(site_info.get("url") or "").rstrip('/')
+            if not site_url or not uid:
+                return ""
+            r2 = RequestUtils(
+                cookies=site_info.get("cookie"),
+                ua=site_info.get("ua"),
+                proxies=settings.PROXY if site_info.get("proxy") else None,
+                timeout=site_info.get("timeout") or 60
+            ).get_res(url=f"{site_url}/userdetails.php?id={uid}")
+            if r2 and r2.status_code == 200:
+                ra = self._extract_recent_activity(r2.text)
+                if ra:
+                    return f"最近动向{ra}"
+            return ""
+        except Exception:
+            return ""
+
     def __userdata_from_db(self, site_info: CommentedMap):
         """
         优先从 MP 内置 siteuserdata 库读取站点用户数据（等级/分享率/时魔/做种），
@@ -2414,33 +2464,7 @@ class AutoSignInMod(_PluginBase):
         except Exception:
             return None
 
-    def __recent_activity_from_userdetails(site_info: CommentedMap, page_source: str = "") -> str:
-        """
-        从 userdetails 页提取最近动向。
-        """
-        try:
-            site_url = str(site_info.get("url") or "").rstrip('/')
-            if not site_url:
-                return ""
-            mu = re.search(r'userdetails\.php\?id=(\d+)', page_source or "")
-            if not mu:
-                return ""
-            uid_url = f"{site_url}/userdetails.php?id={mu.group(1)}"
-            r = RequestUtils(
-                cookies=site_info.get("cookie"),
-                ua=site_info.get("ua"),
-                proxies=settings.PROXY if site_info.get("proxy") else None,
-                timeout=site_info.get("timeout") or 60
-            ).get_res(url=uid_url)
-            if not r or r.status_code != 200:
-                return ""
-            up = re.sub(r"<[^>]+>", " ", r.text)
-            up = re.sub(r"\s+", " ", up)
-            m = re.search(r"(?:最近动向|最近活动|最近访问)\s*[:：]?\s*([^，,。；;|]{1,120})", up)
-            return m.group(1).strip() if m else ""
-        except Exception:
-            return ""
-
+    def _login_meta(page_source: str, site_info: CommentedMap) -> str:
         """
         登录成功后提取总时魔/等级/分享率，返回附加文本。
         优先走官方 SiteChain.refresh_userdata（userdetails 页 XPath 解析，与站点数据统计同源），
@@ -2465,7 +2489,8 @@ class AutoSignInMod(_PluginBase):
                         parts.append(f"总时魔{ud.bonus}")
                     if ud.seeding:
                         parts.append(f"做种{ud.seeding}")
-                    # 先保留基础字段，后续继续抓 userdetails 页最近动向
+                    if parts:
+                        return "，" + "，".join(parts)
             except Exception:
                 logger.debug(f"官方 userdata 解析失败，回退正则：{traceback.format_exc()[-200:]}")
             # 回退：登录页正则
@@ -2497,13 +2522,9 @@ class AutoSignInMod(_PluginBase):
                     if r and r.status_code == 200:
                         up = re.sub(r"<[^>]+>", " ", r.text)
                         up = re.sub(r"\s+", " ", up)
-                        rm = re.search(r"最近动向\s*[:：]?\s*([^，,。；;|]{1,120})", up)
-                        if rm:
-                            parts.append(f"最近动向{rm.group(1).strip()}")
-                        else:
-                            ra = self._extract_recent_activity(up)
-                            if ra:
-                                parts.append(f"最近动向{ra}")
+                        lm = re.search(r"等级\s*[:：]?\s*([^\s，,。；;|]+)", up)
+                        if lm:
+                            parts.append(f"等级{lm.group(1)}")
             except Exception:
                 pass
             return "，" + "，".join(parts) if parts else ""
@@ -2546,7 +2567,7 @@ class AutoSignInMod(_PluginBase):
                         return False, f"无法通过Cloudflare！"
                     return False, f"仿真登录失败，Cookie已失效！"
                 else:
-                    return True, f"模拟登录成功{__login_meta(page_source, site_info)}"
+                    return True, f"模拟登录成功{AutoSignInMod._login_meta(page_source, site_info)}"
             else:
                 res = RequestUtils(cookies=site_cookie,
                                    ua=ua,
@@ -2566,7 +2587,7 @@ class AutoSignInMod(_PluginBase):
                         return False, f"模拟登录失败，{msg}！"
                     else:
                         logger.info(f"{site} 模拟登录成功")
-                        return True, f"模拟登录成功{__login_meta(res.text, site_info)}"
+                        return True, f"模拟登录成功{AutoSignInMod._login_meta(res.text, site_info)}"
                 elif res is not None:
                     logger.warn(f"{site} 模拟登录失败，状态码：{res.status_code}")
                     return False, f"模拟登录失败，状态码：{res.status_code}！"

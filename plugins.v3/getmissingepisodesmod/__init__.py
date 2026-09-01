@@ -34,6 +34,7 @@ class HistoryStatus(Enum):
     ADDED_RSS = "已加订阅"
     NO_EXIST = "存在缺失"
     FAILED = "获取失败"
+    DOWNLOADED = "已下载"
 
 
 class HistoryDataType(Enum):
@@ -372,6 +373,12 @@ class GetMissingEpisodesMod(_PluginBase):
                 "endpoint": self.add_subscribe_history,
                 "methods": ["GET"],
                 "summary": f"订阅 {self.plugin_name} 缺失记录",
+            },
+            {
+                "path": "/search_download_history",
+                "endpoint": self.search_download_history,
+                "methods": ["GET"],
+                "summary": f"搜索下载 {self.plugin_name} 缺失记录",
             },
             {
                 "path": "/toggle_skip_history",
@@ -1207,6 +1214,24 @@ class GetMissingEpisodesMod(_PluginBase):
             logger.warning(f"unique: {unique} 不在历史记录里")
             return False, historys
 
+    def __download_by_unique(self, historys, unique: str):
+        """根据唯一标识搜索并下载缺失剧集"""
+        if unique in historys["details"]:
+            tv_no_exist_info = historys["details"][unique]["tv_no_exist_info"]
+            is_download_success = self._download_by_tv_no_exist_info(tv_no_exist_info, unique)
+            if is_download_success:
+                is_update_exist_status_success, historys = self.__update_exist_status_by_unique(
+                    historys=historys,
+                    unique=unique,
+                    new_status=HistoryStatus.DOWNLOADED.value,
+                )
+                return is_update_exist_status_success, historys
+            else:
+                return False, historys
+        else:
+            logger.warning(f"unique: {unique} 不在历史记录里")
+            return False, historys
+
     def delete_history(self, key: str, apikey: str):
         """删除同步检查记录"""
         logger.info(f"开始删除检查记录: {key}")
@@ -1249,6 +1274,28 @@ class GetMissingEpisodesMod(_PluginBase):
         else:
             logger.warning(f"添加 {key} 订阅失败")
             return schemas.Response(success=False, message="订阅失败")
+
+    def search_download_history(self, key: str, apikey: str):
+        """搜索并下载缺失检查记录"""
+        logger.info(f"开始搜索下载检查记录: {key}")
+        if apikey != settings.API_TOKEN:
+            logger.warning("API密钥错误")
+            return schemas.Response(success=False, message="API密钥错误")
+            
+        historys = self.get_data("history")
+        if not historys:
+            logger.warning("未找到检查记录")
+            return schemas.Response(success=False, message="未找到检查记录")
+
+        is_success, historys = self.__download_by_unique(historys, key)
+        if is_success:
+            logger.info(f"搜索下载 {key} 成功")
+            self.save_data("history", historys)
+            return schemas.Response(success=True, message="搜索下载完成")
+        else:
+            logger.warning(f"搜索下载 {key} 失败")
+            return schemas.Response(success=False, message="搜索下载失败")
+
 
     def set_all_exist_history(self, key: str, apikey: str):
         """标记存在检查记录：将当前缺失的季加入忽略列表，并更新状态为全部存在"""
@@ -1772,6 +1819,23 @@ class GetMissingEpisodesMod(_PluginBase):
                 },
                 "text": "订阅缺失",
             },
+            "search_download_history": {
+                "component": "VBtn",
+                "props": {
+                    "style": "height: 100%; width: 100%; flex: 1;",
+                },
+                "events": {
+                    "click": {
+                        "api": "plugin/GetMissingEpisodesMod/search_download_history",
+                        "method": "get",
+                        "params": {
+                            "key": f"{unique}",
+                            "apikey": settings.API_TOKEN,
+                        },
+                    }
+                },
+                "text": "搜索下载",
+            },
             "set_all_exist_history": {
                 "component": "VBtn",
                 "props": {
@@ -1836,6 +1900,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 "delete_history",
                 "set_all_exist_history",
                 "add_subscribe_history",
+                "search_download_history",
                 "toggle_skip_history",
             ],
             HistoryStatus.ADDED_RSS.value: [

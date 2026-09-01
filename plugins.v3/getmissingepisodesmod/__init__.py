@@ -67,7 +67,7 @@ class Icons(Enum):
     FINISHED = "icon_finished"
 
 
-class GetMissingEpisodesInfo(TypedDict, total=False):
+class GetMissingEpisodesModInfo(TypedDict, total=False):
     season: Optional[int]
     episode_no_exist: Optional[List[int]]
     episode_total: int  # 筛选后的总集数（用于检查）
@@ -82,7 +82,7 @@ class TvNoExistInfo(TypedDict):
     poster_path: str
     vote_average: float | str
     last_air_date: str
-    season_episode_no_exist_info: Dict[str, GetMissingEpisodesInfo]
+    season_episode_no_exist_info: Dict[str, GetMissingEpisodesModInfo]
     status: str
     status_cn: str
 
@@ -98,7 +98,7 @@ def create_tv_no_exist_info(
     tmdbid=0,
     vote_average=0.0,
     poster_path=default_poster_path,
-    season_episode_no_exist_info: Optional[Dict[str, GetMissingEpisodesInfo]] = None,
+    season_episode_no_exist_info: Optional[Dict[str, GetMissingEpisodesModInfo]] = None,
     status: str = "Unknown",
     status_cn: str = "未知",
 ) -> TvNoExistInfo:
@@ -181,11 +181,11 @@ class SVGPaths:
         return paths.get(icon_name, [])
 
 
-class GetMissingEpisodes(_PluginBase):
-    plugin_name = "剧集管家"
+class GetMissingEpisodesMod(_PluginBase):
+    plugin_name = "剧集管家·下载补齐自用版"
     plugin_desc = "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅补全"
     plugin_icon = "https://raw.githubusercontent.com/andyxu8023/MoviePilot-Plugins/main/icons/EpisodeNoExist.png"
-    plugin_version = "3.0.2"
+    plugin_version = "3.1.0"
     plugin_author = "boeto，左岸"
     author_url = "https://github.com/andyxu8023"
     plugin_config_prefix = "getmissingepisodes_"
@@ -202,7 +202,7 @@ class GetMissingEpisodes(_PluginBase):
     _tmdbChain: TmdbChain
     _msChain: MediaServerChain
     _msHelper: MediaServerHelper
-    _plugin_id = "GetMissingEpisodes"
+    _plugin_id = "GetMissingEpisodesMod"
     _scheduler = None
 
     # 配置属性
@@ -391,7 +391,7 @@ class GetMissingEpisodes(_PluginBase):
         if self._enabled and self._cron:
             return [
                 {
-                    "id": "GetMissingEpisodes",
+                    "id": "GetMissingEpisodesMod",
                     "name": f"{self.plugin_name}",
                     "trigger": CronTrigger.from_crontab(self._cron),
                     "func": self.__refresh,
@@ -401,7 +401,7 @@ class GetMissingEpisodes(_PluginBase):
         elif self._enabled:
             return [
                 {
-                    "id": "GetMissingEpisodes",
+                    "id": "GetMissingEpisodesMod",
                     "name": f"{self.plugin_name}",
                     "trigger": CronTrigger.from_crontab("0 8 * * *"),
                     "func": self.__refresh,
@@ -750,7 +750,7 @@ class GetMissingEpisodes(_PluginBase):
             episode_total_unfiltered: int,
         ):
             logger.debug(f"添加【{title}】第【{season}】季缺失集：{episode_no_exist}")
-            season_info: GetMissingEpisodesInfo = {
+            season_info: GetMissingEpisodesModInfo = {
                 "season": season,
                 "episode_no_exist": episode_no_exist,
                 "episode_total": episode_total,
@@ -1219,7 +1219,7 @@ class GetMissingEpisodes(_PluginBase):
             logger.warning("未找到检查记录")
             return schemas.Response(success=False, message="未找到检查记录")
 
-        is_success, historys = GetMissingEpisodes.__remove_history_by_unique(historys, key)
+        is_success, historys = GetMissingEpisodesMod.__remove_history_by_unique(historys, key)
 
         if is_success:
             logger.info(f"删除检查记录 {key} 成功")
@@ -1762,7 +1762,7 @@ class GetMissingEpisodes(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodes/add_subscribe_history",
+                        "api": "plugin/GetMissingEpisodesMod/add_subscribe_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1781,7 +1781,7 @@ class GetMissingEpisodes(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodes/set_all_exist_history",
+                        "api": "plugin/GetMissingEpisodesMod/set_all_exist_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1800,7 +1800,7 @@ class GetMissingEpisodes(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodes/toggle_skip_history",
+                        "api": "plugin/GetMissingEpisodesMod/toggle_skip_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1819,7 +1819,7 @@ class GetMissingEpisodes(_PluginBase):
                 },
                 "events": {
                     "click": {
-                        "api": "plugin/GetMissingEpisodes/delete_history",
+                        "api": "plugin/GetMissingEpisodesMod/delete_history",
                         "method": "get",
                         "params": {
                             "key": f"{unique}",
@@ -1862,7 +1862,7 @@ class GetMissingEpisodes(_PluginBase):
         return action_buttons_list
 
     def __get_history_post_content(self, history: ExtendedHistoryDetail):
-        def __count_seasons_episodes(seasons_episodes_info: Dict[str, GetMissingEpisodesInfo]):
+        def __count_seasons_episodes(seasons_episodes_info: Dict[str, GetMissingEpisodesModInfo]):
             seasons_episodes_info = seasons_episodes_info or {}
             seasons_count = len(seasons_episodes_info.keys())
             episodes_count = 0
@@ -2102,7 +2102,7 @@ class GetMissingEpisodes(_PluginBase):
         for icon_name in Icons:
             paths = SVGPaths.get_paths(icon_name)
             if paths:
-                icon_content[icon_name] = GetMissingEpisodes.__get_svg_content(color, paths)
+                icon_content[icon_name] = GetMissingEpisodesMod.__get_svg_content(color, paths)
         return icon_content
 
     @staticmethod
@@ -2145,7 +2145,7 @@ class GetMissingEpisodes(_PluginBase):
             },
             "events": {
                 "click": {
-                    "api": "plugin/GetMissingEpisodes/set_history_type",
+                    "api": "plugin/GetMissingEpisodesMod/set_history_type",
                     "method": "get",
                     "params": {
                         "history_type": history_type,
@@ -2269,7 +2269,7 @@ class GetMissingEpisodes(_PluginBase):
 
         content = list(
             map(
-                lambda s: GetMissingEpisodes.__get_historys_statistic_content(
+                lambda s: GetMissingEpisodesMod.__get_historys_statistic_content(
                     title=str(s["title"]),
                     value=str(s["value"]),
                     icon_name=Icons(s["icon_name"]),

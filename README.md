@@ -1,45 +1,33 @@
-# MoviePilot V3 插件仓库
-
-这里放两套插件：
-
-- **MpMissingEpisodes**：缺失剧集补齐
-- **MetaFiller**：缺失剧集元数据补全
+# MoviePilot V3 自用插件库
 
 ## 安装
 
-在 MoviePilot 设置 → 插件市场 中添加本仓库：
+MoviePilot 设置 → 插件市场 → 添加仓库：
 
-```text
+```
 https://github.com/asice999/MoviePilot-Plugins
 ```
 
-## 插件说明
+## 插件列表
 
-### MpMissingEpisodes
-扫描媒体库剧集缺失情况，自动搜索资源下载补齐。
+| 插件 | 说明 |
+|------|------|
+| **`AutoSignInMod`** | 自动签到魔改版：模拟登录+签到，显示总时魔/等级/分享率/当日奖励 |
+| **`CloudSubscribe`** | 网盘订阅助手：搜索、订阅、洗版、转存、卡死种子清理 |
+| **`GetMissingEpisodesMod`** | 剧集管家·下载补齐自用版：检测剧集缺失并自动搜索下载补全 |
+| **`MetaFiller`** | 缺失剧集元数据补全：TMDB 中文优先，电视猫/央视网回退 |
+| **`nodeseeksign`** | NodeSeek 论坛签到：自动签到，随机奖励+自动重试 |
+| **`SiteStatistic`** | 站点数据统计（自用）：统计数据图表 |
 
-### MetaFiller
-扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。支持：
+## 目录结构
 
-- TMDB 中文优先
-- 电视猫 / 央视网回退
-- 预览模式
-- 断点续跑
-- 指定剧处理
-- 历史报告
-- 丢弃分类可视化
-
-## 目录
-
-```text
-plugins.v3/mpmissingepisodes/__init__.py
-plugins.v3/metafiller/__init__.py
+```
+plugins.v3/autosigninmod/
+plugins.v3/cloudsubscribe/
+plugins.v3/getmissingepisodesmod/
+plugins.v3/metafiller/
+plugins.v3/nodeseeksign/
+plugins.v3/sitestatistic/
 package.v3.json
 icons/
 ```
-
-## CloudSubscribe
-
-网盘订阅助手。支持搜索、订阅、洗版、转存与卡死种子清理。
-
-仓库地址：`https://github.com/asice999/MoviePilot-Plugins`

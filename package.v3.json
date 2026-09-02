@@ -1,17 +1,48 @@
 {
- "MpMissingEpisodes": {
-  "name": "缺失剧集补齐（自用）",
-  "description": "定时扫描媒体库（Emby/Jellyfin）剧集缺失情况，自动搜索资源下载补齐，支持全库扫描或指定剧集、未播出集自动转订阅、卡死种子清理。",
-  "labels": "媒体库,剧集,补齐,Emby,Jellyfin",
-  "version": "1.0.1",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/mpmissingepisodes.png",
+ "AutoSignInMod": {
+  "name": "自动签到魔改版",
+  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率/最近动向，签到表显示当日奖励。",
+  "labels": "签到,站点,Cookie,自动登录",
+  "version": "2.9.8",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v2.9.8": "修复登录通知最近动向NameError（__login_meta静态方法内调用name-mangling）；登录表补全最近动向",
+   "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
+   "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获",
+   "v2.9.7": "登录表新增总时魔/等级/分享率列；签到奖励优先提取「签到已得X」；修复做种积分误报签到奖励"
+  }
+ },
+ "CloudSubscribe": {
+  "name": "网盘订阅助手（自用）",
+  "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
+  "labels": "网盘,订阅,搜索,洗版,Emby",
+  "version": "1.3.5",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
   "author": "asice999",
   "level": 1,
   "release": true,
   "system_version": ">=3.0.0",
   "history": {
-   "v1.0.0": "首次发布：扫描媒体库剧集缺失、自动搜索下载补齐、未播出集自动转订阅池、卡死种子检测清理。",
-   "v1.0.1": "修复 _finish 签名缺 pending_notes 参数（4 参调用报错）"
+   "v1.3.3": "移除运行时依赖清单，避免启动期依赖安装检查；保留本地/在线切换兼容。",
+   "v1.3.2": "统一云端/本地身份逻辑，避免市场回退覆盖；依赖约束改为与现有环境兼容",
+   "v1.3.1": "115 客户端升级：支持 MP 配置 Token 复用与 Cookie 多客户端路由（P115ClientRouter），提升识别与播放稳定性",
+   "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
+  }
+ },
+ "GetMissingEpisodesMod": {
+  "name": "剧集管家·下载补齐自用版",
+  "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全。合并缺失剧集补齐能力：搜索规则组/黑名单/卡死种子检测/未来集订阅池。",
+  "labels": "剧集,缺失,订阅,下载,补全",
+  "version": "3.1.0",
+  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
+  "author": "asice999",
+  "level": 2,
+  "v2": true,
+  "history": {
+   "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知"
   }
  },
  "MetaFiller": {
@@ -31,21 +62,17 @@
    "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
   }
  },
- "CloudSubscribe": {
-  "name": "网盘订阅助手（自用）",
-  "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
-  "labels": "网盘,订阅,搜索,洗版,Emby",
-  "version": "1.3.5",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
+ "SiteStatistic": {
+  "name": "站点数据统计（自用）",
+  "description": "自用：站点统计数据图表。",
+  "labels": "统计,站点,仪表板",
+  "version": "1.9.2",
+  "icon": "statistic.png",
   "author": "asice999",
-  "level": 1,
-  "release": true,
-  "system_version": ">=3.0.0",
+  "level": 2,
+  "v2": true,
   "history": {
-   "v1.3.3": "移除运行时依赖清单，避免启动期依赖安装检查；保留本地/在线切换兼容。",
-   "v1.3.2": "统一云端/本地身份逻辑，避免市场回退覆盖；依赖约束改为与现有环境兼容",
-   "v1.3.1": "115 客户端升级：支持 MP 配置 Token 复用与 Cookie 多客户端路由（P115ClientRouter），提升识别与播放稳定性",
-   "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
+   "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
   }
  },
  "nodeseeksign": {
@@ -68,48 +95,6 @@
    "v1.3.0": "稳定性优化：新增统一请求适配(优先cloudscraper→curl_cffi→requests)、强制代理注入、随机延迟、完善请求头；支持成员ID，通知与页面展示用户信息(含头像)",
    "v1.2.0": "尝试优化成功率，未测试",
    "v1.0.0": "支持API方式签到，绕过CloudFlare防护，支持随机奖励和自动加鸡腿"
-  }
- },
- "AutoSignInMod": {
-  "name": "自动签到魔改版",
-  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率/最近动向，签到表显示当日奖励。",
-  "labels": "签到,站点,Cookie,自动登录",
-  "version": "2.9.8",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v2.9.8": "修复登录通知最近动向NameError（__login_meta静态方法内调用name-mangling）；登录表补全最近动向",
-   "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
-   "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获",
-   "v2.9.7": "登录表新增总时魔/等级/分享率列；签到奖励优先提取「签到已得X」；修复做种积分误报签到奖励"
-  }
- },
- "SiteStatistic": {
-  "name": "站点数据统计（自用）",
-  "description": "自用：站点统计数据图表。",
-  "labels": "统计,站点,仪表板",
-  "version": "1.9.2",
-  "icon": "statistic.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
-  }
- },
- "GetMissingEpisodesMod": {
-  "name": "剧集管家·下载补齐自用版",
-  "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全。合并缺失剧集补齐能力：搜索规则组/黑名单/卡死种子检测/未来集订阅池。",
-  "labels": "剧集,缺失,订阅,下载,补全",
-  "version": "3.1.0",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知"
   }
  }
 }

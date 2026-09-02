@@ -25,7 +25,9 @@ cloudsubscribe/
 - `handlers/` 组合领域服务并对接事件、API、通知和任务入口。
 - `utils/` 仅保留无状态或低状态的通用辅助逻辑。
 
-## 前端与发布
+## 离线依赖
+
+`wheels/` 存放 CloudSubscribe 私有离线依赖轮子。插件启动时先把 `vendor/` 加入 `sys.path`，再从 `wheels/` 离线补装 `torf`、`curl_cffi`、`p115client`、`qrcode`，避免容器更新或换机后因系统环境缺包而加载失败。
 
 前端源码位于 [`frontend/cloudsubscribe`](../../frontend/cloudsubscribe)。
 [`plugins-release.yml`](../../.github/workflows/plugins-release.yml) 在发布时生成并打入插件 ZIP。

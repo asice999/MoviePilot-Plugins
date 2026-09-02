@@ -6,26 +6,33 @@ import copy
 import datetime
 import re
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event as ThreadEvent, Lock, RLock, local
 from typing import Optional, Any, List, Dict, Tuple, Callable
 
 import pytz
 
-# ---- 依赖自管理：容器更新/重建后自动补装，无需手动 pip ----
+_PLUGIN_DIR = Path(__file__).resolve().parent
+_VENDOR_DIR = _PLUGIN_DIR / "vendor"
+_WHEELHOUSE = _PLUGIN_DIR / "wheels"
+
+# ---- 依赖自管理：插件私有 wheelhouse + vendor，更新/换机无需联网 ----
 _REQUIRED_DEPS = ["torf", "curl_cffi", "p115client", "qrcode"]
 
 def _ensure_deps() -> None:
-    import importlib.util, os, subprocess, sys
+    import importlib.util, subprocess, sys
+    _VENDOR_DIR.mkdir(parents=True, exist_ok=True)
+    if str(_VENDOR_DIR) not in sys.path:
+        sys.path.insert(0, str(_VENDOR_DIR))
     missing = [m for m in _REQUIRED_DEPS if importlib.util.find_spec(m) is None]
     if not missing:
         return
-    site = next((p for p in sys.path if p.endswith("site-packages")), None)
-    if not site:
-        return
+    if not _WHEELHOUSE.exists():
+        raise RuntimeError(f"cloudsubscribe wheelhouse missing: {_WHEELHOUSE}")
     for m in missing:
         cmds = (
-            [sys.executable, "-m", "pip", "install", "--target", site, m],
-            ["/usr/local/bin/pip3", "install", "--target", site, m],
+            [sys.executable, "-m", "pip", "install", "--no-index", "--find-links", str(_WHEELHOUSE), "--target", str(_VENDOR_DIR), m],
+            ["/usr/local/bin/pip3", "install", "--no-index", "--find-links", str(_WHEELHOUSE), "--target", str(_VENDOR_DIR), m],
         )
         for c in cmds:
             try:
@@ -37,6 +44,7 @@ def _ensure_deps() -> None:
 
 _ensure_deps()
 # ---- 依赖自管理结束 ----
+
 
 from app.api.endpoints.plugin import register_plugin_api
 from app.core.config import settings
@@ -139,7 +147,7 @@ class CloudSubscribe(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/odomu/MoviePilot-Plugins/main/icons/cloud.png"
     # 插件版本
-    plugin_version = "1.3.5"
+    plugin_version = "1.4.0"
     # 插件作者
     plugin_author = "asice999"
     # 作者主页

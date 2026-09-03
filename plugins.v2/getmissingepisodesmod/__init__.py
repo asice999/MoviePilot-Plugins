@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
 
 from app.chain.tmdb import TmdbChain
-from app.schemas.types import MediaType, MediaSource
+from app.schemas.types import MediaType
 from app import schemas
 from app.chain.media import MediaChain
 from app.chain.subscribe import SubscribeChain
@@ -773,7 +773,7 @@ class GetMissingEpisodesMod(_PluginBase):
         try:
             tmdbinfo = self._mediaChain.recognize_media(
                 mtype=MediaType.TV,
-                media_source=MediaSource.TMDB,
+                media_source="TheMovieDb",
                 media_id=str(tmdbid),
             )
         except Exception as e:
@@ -830,7 +830,7 @@ class GetMissingEpisodesMod(_PluginBase):
                         continue
                         
                     # 判断用户是否已经添加订阅
-                    if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
+                    if self._subOper.exists("TheMovieDb", str(tmdbid), season=season):
                         logger.info(f"【{title}】第【{season}】季已存在订阅, 跳过")
                         continue
                     
@@ -874,7 +874,7 @@ class GetMissingEpisodesMod(_PluginBase):
                     logger.debug(f"【{title}】第【{season}】季在媒体库已存在的集数信息: {exist_episode}")
                     
                     # 判断用户是否已经添加订阅
-                    if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
+                    if self._subOper.exists("TheMovieDb", str(tmdbid), season=season):
                         logger.info(f"【{title}】第【{season}】季已存在订阅, 跳过")
                         continue
                         
@@ -1088,7 +1088,7 @@ class GetMissingEpisodesMod(_PluginBase):
                     break
 
         # 判断用户是否已经添加订阅
-        if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
+        if self._subOper.exists("TheMovieDb", str(tmdbid), season=season):
             logger.info(f"{title_season} 订阅已存在")
             return True
 
@@ -1110,7 +1110,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 title=title,
                 year=year,
                 mtype=MediaType.TV,
-                media_source=MediaSource.TMDB,
+                media_source="TheMovieDb",
                 media_id=str(tmdbid),
                 season=season,
                 exist_ok=True,
@@ -2521,7 +2521,7 @@ class GetMissingEpisodesMod(_PluginBase):
             sinfo = season_episode_no_exist_info[season_key]
             eps = sinfo.get("episode_no_exist") or []
             total_ep = sinfo.get("episode_total_unfiltered") or sinfo.get("episode_total") or 0
-            if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season_int):
+            if self._subOper.exists("TheMovieDb", str(tmdbid), season=season_int):
                 logger.info(f"{title} S{season_int:02d} 已存在订阅, 跳过下载")
                 continue
             ne = NotExistMediaInfo(season=season_int, episodes=eps or None, total_episode=total_ep)
@@ -2658,7 +2658,7 @@ class GetMissingEpisodesMod(_PluginBase):
         """
         mediainfo = MediaInfo()
         mediainfo.type = MediaType.TV
-        mediainfo.source = MediaSource.TMDB
+        mediainfo.source = "TheMovieDb"
         mediainfo.media_id = str(tmdbid)
         mediainfo.tmdb_id = int(tmdbid)
         mediainfo.title = title
@@ -2681,7 +2681,7 @@ class GetMissingEpisodesMod(_PluginBase):
             contexts = self._search_with_rules(search_chain, tmdbid, title, mid, season, ne, rule_groups)
         else:
             contexts = search_chain.search_by_id(
-                media_source=MediaSource.TMDB,
+                media_source="TheMovieDb",
                 media_id=str(tmdbid),
                 mtype=MediaType.TV,
                 season=season
@@ -2775,7 +2775,7 @@ class GetMissingEpisodesMod(_PluginBase):
         try:
             mediainfo = MediaInfo()
             mediainfo.type = MediaType.TV
-            mediainfo.source = MediaSource.TMDB
+            mediainfo.source = "TheMovieDb"
             mediainfo.media_id = str(item["tmdbid"])
             mediainfo.tmdb_id = int(item["tmdbid"])
             mediainfo.title = item["title"]
@@ -2798,7 +2798,7 @@ class GetMissingEpisodesMod(_PluginBase):
             year = ""
             if "(" in title and ")" in title:
                 year = title.rsplit("(", 1)[-1].split(")", 1)[0]
-            sid, msg = SubscribeChain().add(title=title, year=year, mtype=MediaType.TV, season=season, media_source=MediaSource.TMDB, media_id=str(item["tmdbid"]), message=False, exist_ok=True, username="缺失剧集补齐")
+            sid, msg = SubscribeChain().add(title=title, year=year, mtype=MediaType.TV, season=season, media_source="TheMovieDb", media_id=str(item["tmdbid"]), message=False, exist_ok=True, username="缺失剧集补齐")
             if sid:
                 logger.info(f"未播出集已转订阅: {title} S{season:02d} -> 订阅#{sid}")
             else:
@@ -3073,7 +3073,7 @@ class GetMissingEpisodesMod(_PluginBase):
             for season, ne in seasons.items():
                 try:
                     contexts = search_chain.search_by_id(
-                        media_source=MediaSource.TMDB,
+                        media_source="TheMovieDb",
                         media_id=tmdbid,
                         mtype=MediaType.TV,
                         season=season
@@ -3206,7 +3206,7 @@ class GetMissingEpisodesMod(_PluginBase):
         """
         mediainfo = MediaInfo()
         mediainfo.type = MediaType.TV
-        mediainfo.source = MediaSource.TMDB
+        mediainfo.source = "TheMovieDb"
         mediainfo.media_id = str(tmdbid)
         mediainfo.tmdb_id = int(tmdbid)
         mediainfo.title = title

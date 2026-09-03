@@ -1,0 +1,74 @@
+{
+  "AutoSignInMod": {
+    "name": "自动签到魔改版",
+    "description": "魔改版：自动模拟登录、签到站点，支持浏览器登录凭据管理与Cookie自动刷新。",
+    "labels": "签到",
+    "version": "2.9.8",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
+    "author": "asice999",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  },
+  "CloudSubscribe": {
+    "name": "网盘订阅助手（自用）",
+    "description": "整合网盘能力与多渠道资源搜索，自动查找并补充订阅缺失的影视内容。",
+    "labels": "订阅",
+    "version": "1.4.0",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
+    "author": "asice999",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  },
+  "GetMissingEpisodesMod": {
+    "name": "剧集管家·下载补齐自用版",
+    "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅补全",
+    "labels": "整理",
+    "version": "3.1.0",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
+    "author": "boeto，左岸",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  },
+  "MetaFiller": {
+    "name": "缺失剧集元数据补全（自用）",
+    "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
+    "labels": "整理",
+    "version": "1.3.2",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
+    "author": "asice999",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  },
+  "nodeseeksign": {
+    "name": "NodeSeek论坛签到",
+    "description": "懒羊羊定制：自动完成NodeSeek论坛每日签到，支持随机奖励和自动重试功能",
+    "labels": "签到",
+    "version": "2.1.2",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
+    "author": "asice999",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  },
+  "SiteStatistic": {
+    "name": "站点数据统计",
+    "description": "自用：站点统计数据图表。",
+    "labels": "统计",
+    "version": "1.9.2",
+    "v3": false,
+    "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/statistic.png",
+    "author": "asice999",
+    "project_url": "https://github.com/asice999/MoviePilot-Plugins",
+    "level": 1,
+    "release": true
+  }
+}

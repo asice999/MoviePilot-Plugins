@@ -24,6 +24,7 @@ from app.domain.context import MediaInfo
 from app.domain.meta.metabase import MetaBase
 from app.core.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
+from .episode_gap import calculate_missing_episodes
 from uuid import uuid4
 
 
@@ -277,8 +278,9 @@ class GetMissingEpisodesMod(_PluginBase):
         self._cron = config.get("cron", "").strip()
         self._clear = config.get("clear", False)
         self._only_season_exist = config.get("only_season_exist", True)
+        self._onestrm_mode = config.get("onestrm_mode", True)
         self._only_aired = config.get("only_aired", True)
-        self._no_exist_action = config.get("no_exist_action", NoExistAction.ONLY_HISTORY.value)
+        self._no_exist_action = config.get("no_exist_action", NoExistAction.DOWNLOAD.value)
         self._auto_skip_finished = config.get("auto_skip_finished", False)
         self._include_s00_season = config.get("include_s00_season", False)
         self._auto_download = config.get("auto_download", False)
@@ -811,7 +813,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 logger.debug(f"【{title}】未获取到TMDB季集信息, 跳过获取缺失集数")
                 return False, tv_no_exist_info
 
-            if not exist_season_info and not self._only_season_exist:
+            if not exist_season_info and (not self._only_season_exist or self._onestrm_mode):
                 logger.debug(f"【{title}】全部季不存在, 添加全部季集数")
                 # 全部季不存在
                 for season, _ in tmdbinfo_seasons:
@@ -830,11 +832,7 @@ class GetMissingEpisodesMod(_PluginBase):
                         logger.debug(f"【{title}】第【{season}】季未获取到TMDB集数信息, 跳过")
                         continue
                         
-                    # 判断用户是否已经添加订阅
-                    if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
-                        logger.info(f"【{title}】第【{season}】季已存在订阅, 跳过")
-                        continue
-                    
+                    # OneSRM 规则：订阅记录不代表媒体库已收齐，仍保留整季查漏目标。
                     # 获取实际总集数
                     episode_total_unfiltered = self.__get_total_episodes_unfiltered(tmdbid, season)
                         
@@ -876,17 +874,19 @@ class GetMissingEpisodesMod(_PluginBase):
 
                     if exist_episode:
                         logger.debug(f"查找【{title}】第【{season}】季缺失集集数")
-                        # 按TMDB集数查找缺失集
-                        lack_episode = list(set(filted_episodes).difference(set(exist_episode)))
+                        # OneSRM 规则：只比较媒体库已收集集号，订阅状态不参与缺失判断。
+                        lack_episode = calculate_missing_episodes(
+                            total_episodes=episode_total,
+                            collected_episodes=exist_episode,
+                            known_episode_numbers=filted_episodes,
+                        )
 
                         if not lack_episode:
                             logger.debug(f"【{title}】第【{season}】季全部集存在")
                             continue
 
-                        # 已存在订阅：仅当整季无缺时才跳过；部分缺失仍需检测（原逻辑误判「已订阅=已下齐」）
                         if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
-                            logger.info(f"【{title}】第【{season}】季已存在订阅，但媒体库存在 {len(lack_episode)} 集缺失，继续检测")
-
+                            logger.info(f"【{title}】第【{season}】季已存在订阅，但仍缺失集 {lack_episode}，按逐集查漏处理")
                         # 添加不存在的季集信息
                         __append_season_info(
                             season=season,
@@ -1474,6 +1474,20 @@ class GetMissingEpisodesMod(_PluginBase):
                                     {
                                         "component": "VSwitch",
                                         "props": {
+                                            "model": "onestrm_mode",
+                                            "label": "OneSRM 精确查漏",
+                                            "hint": "按媒体库逐集计算缺失；已有整季订阅也继续补中间缺集，不把订阅当作已下载",
+                                        },
+                                    }
+                                ],
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [
+                                    {
+                                        "component": "VSwitch",
+                                        "props": {
                                             "model": "include_s00_season",
                                             "label": "包含S00季检测",
                                             "hint": "开启：S00季（特别季/特典季）纳入缺失检测；关闭：跳过S00季检测",
@@ -1777,6 +1791,7 @@ class GetMissingEpisodesMod(_PluginBase):
             "cron": "",
             "onlyonce": False,
             "only_season_exist": True,
+            "onestrm_mode": True,
             "only_aired": True,
             "auto_skip_finished": False,
             "include_s00_season": False,
@@ -2521,9 +2536,7 @@ class GetMissingEpisodesMod(_PluginBase):
             sinfo = season_episode_no_exist_info[season_key]
             eps = sinfo.get("episode_no_exist") or []
             total_ep = sinfo.get("episode_total_unfiltered") or sinfo.get("episode_total") or 0
-            if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season_int):
-                logger.info(f"{title} S{season_int:02d} 已存在订阅, 跳过下载")
-                continue
+            # OneSRM 规则：已有整季订阅也不能跳过，按 episodes 精确补缺。
             ne = NotExistMediaInfo(season=season_int, episodes=eps or None, total_episode=total_ep)
             no_exists.setdefault(mid, {})[season_int] = ne
 

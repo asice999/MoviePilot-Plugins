@@ -3,14 +3,15 @@
   "name": "剧集管家·下载补齐自用版",
   "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全。合并缺失剧集补齐能力：搜索规则组/黑名单/卡死种子检测/未来集订阅池。",
   "labels": "剧集,缺失,订阅,下载,补全",
-  "version": "3.1.2",
+  "version": "3.2.0",
   "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
   "author": "asice999",
   "level": 2,
   "history": {
    "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知",
    "v3.1.1": "修复：媒体库部分集缺失时，因该季已存在订阅而被整季跳过（已订阅≠已下齐）；现改为算完缺失集后再判断",
-   "v3.1.2": "no_exist_action 默认改为 DOWNLOAD：媒体库发现缺失集直接搜下载，绕过 RSS/订阅通道"
+   "v3.1.2": "no_exist_action 默认改为 DOWNLOAD：媒体库发现缺失集直接搜下载，绕过 RSS/订阅通道",
+   "v3.2.0": "按 OneSRM 规则逐季逐集查漏：订阅不等于已收集；已订阅季仍计算中间缺集并按 episodes 精确补齐"
   }
  },
  "MetaFiller": {

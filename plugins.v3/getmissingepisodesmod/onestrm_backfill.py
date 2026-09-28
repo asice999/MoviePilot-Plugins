@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
-from episode_gap import calculate_missing_episodes
+try:
+    from .episode_gap import calculate_missing_episodes
+except ImportError:  # direct execution by regression tests
+    from episode_gap import calculate_missing_episodes
 
 
 def build_season_record(

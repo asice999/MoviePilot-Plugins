@@ -316,6 +316,8 @@ class GetMissingEpisodesMod(_PluginBase):
             default=[]
         )
 
+        self._config = config
+
     def _parse_list_config(self, config_value: Any, default: List[str] = None) -> List[str]:
         """解析列表配置，支持字符串和列表格式"""
         if default is None:

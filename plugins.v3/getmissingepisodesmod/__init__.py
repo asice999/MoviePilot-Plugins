@@ -25,6 +25,7 @@ from app.domain.context import MediaInfo
 from app.domain.meta.metabase import MetaBase
 from app.core.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
+from app.schemas.media import build_media_key
 from .episode_gap import calculate_missing_episodes
 from .onestrm_backfill import build_season_record, mark_attempt, should_attempt
 from uuid import uuid4
@@ -2677,7 +2678,7 @@ class GetMissingEpisodesMod(_PluginBase):
             logger.warning(f"unique: {unique} 季集信息不完整, 跳过下载")
             return False
 
-        mid = str(tmdbid)
+        mid = build_media_key(MediaSource.TMDB, tmdbid)
         no_exists = {}
         for season_key in sorted(season_episode_no_exist_info.keys()):
             try:

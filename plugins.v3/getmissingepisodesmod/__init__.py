@@ -390,15 +390,23 @@ class GetMissingEpisodesMod(_PluginBase):
                 return True
         return False
 
-    def _watchlist_mark_attempt(self, tv_info: TvNoExistInfo, success: bool, error: str = "") -> None:
+    def _watchlist_mark_attempt(self, tv_info: TvNoExistInfo, success: bool, error: str = "") -> bool:
+        """Mark every queued/failed season.  A failed single-episode match must not
+        turn a full-season batch request into a retry timer."""
         watchlist = self._watchlist_load()
         tmdbid = int(tv_info.get("tmdbid") or 0)
-        for season in (tv_info.get("season_episode_no_exist_info") or {}):
+        issue_groups = tv_info.get("season_episode_no_exist_info") or {}
+        matched_seasons = {int(v.get("season")) for v in issue_groups.values() if v.get("season")}
+        changed = False
+        for season, sinfo in issue_groups.items():
             key = self._watchlist_key(tmdbid, int(season))
             record = watchlist.get(key)
-            if record:
+            if record and int(sinfo.get("season")) in matched_seasons:
                 watchlist[key] = mark_attempt(record, success=success, error=error)
-        self._watchlist_save(watchlist)
+                changed = True
+        if changed:
+            self._watchlist_save(watchlist)
+        return changed
 
     def _start_service(self):
         """启动服务"""

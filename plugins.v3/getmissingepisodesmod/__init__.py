@@ -25,6 +25,7 @@ from app.domain.meta.metabase import MetaBase
 from app.core.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
 from .episode_gap import calculate_missing_episodes
+from .onestrm_backfill import build_season_record, mark_attempt, should_attempt
 from uuid import uuid4
 
 
@@ -35,12 +36,13 @@ class HistoryStatus(Enum):
     ADDED_RSS = "已加订阅"
     NO_EXIST = "存在缺失"
     FAILED = "获取失败"
-    DOWNLOADED = "已下载"
+    DOWNLOADED = "已入队"
 
 
 class HistoryDataType(Enum):
     ALL_EXIST = "全部存在"
     ADDED_RSS = "已加订阅"
+    DOWNLOADED = "已入队"
     NO_EXIST = "存在缺失"
     FAILED = "失败记录"
     ALL = "所有记录"
@@ -184,10 +186,10 @@ class SVGPaths:
 
 
 class GetMissingEpisodesMod(_PluginBase):
-    plugin_name = "剧集管家·下载补齐自用版"
-    plugin_desc = "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅补全"
+    plugin_name = "OneSRM 剧集查漏·自动补齐"
+    plugin_desc = "按 OneSRM 规则逐季逐集扫描媒体库，自动搜索下载缺失剧集"
     plugin_icon = "https://raw.githubusercontent.com/andyxu8023/MoviePilot-Plugins/main/icons/EpisodeNoExist.png"
-    plugin_version = "3.2.0"
+    plugin_version = "4.0.0"
     plugin_author = "boeto，左岸"
     author_url = "https://github.com/andyxu8023"
     plugin_config_prefix = "getmissingepisodes_"
@@ -214,6 +216,8 @@ class GetMissingEpisodesMod(_PluginBase):
     _clear: bool = False
     _clearflag: bool = False
     _only_season_exist: bool = True
+    _onestrm_mode: bool = True
+    _retry_hours: float = 24.0
     _only_aired: bool = True
     _no_exist_action: str = NoExistAction.DOWNLOAD.value
     _save_path_replaces: List[str] = []
@@ -279,6 +283,7 @@ class GetMissingEpisodesMod(_PluginBase):
         self._clear = config.get("clear", False)
         self._only_season_exist = config.get("only_season_exist", True)
         self._onestrm_mode = config.get("onestrm_mode", True)
+        self._retry_hours = float(config.get("retry_hours", 24.0))
         self._only_aired = config.get("only_aired", True)
         self._no_exist_action = config.get("no_exist_action", NoExistAction.DOWNLOAD.value)
         self._auto_skip_finished = config.get("auto_skip_finished", False)
@@ -324,6 +329,76 @@ class GetMissingEpisodesMod(_PluginBase):
             return [item for item in config_value if item]
         else:
             return default
+
+    def _watchlist_load(self) -> Dict[str, Any]:
+        data = self.get_data("onestrm_watchlist") or {}
+        return data if isinstance(data, dict) else {}
+
+    def _watchlist_save(self, data: Dict[str, Any]) -> None:
+        self.save_data("onestrm_watchlist", data)
+
+    @staticmethod
+    def _watchlist_key(tmdbid: int, season: int) -> str:
+        return f"{int(tmdbid)}:S{int(season):02d}"
+
+    def _sync_watchlist(self, tv_info: TvNoExistInfo, collected_by_season: Dict[int, List[int]]) -> List[Dict[str, Any]]:
+        """Persist OneSRM-style per-season collected/missing state."""
+        watchlist = self._watchlist_load()
+        tmdbid = int(tv_info.get("tmdbid") or 0)
+        title = tv_info.get("title") or "未知"
+        issues = tv_info.get("season_episode_no_exist_info") or {}
+        season_numbers = set(int(s) for s in collected_by_season.keys())
+        season_numbers.update(int(s) for s in issues.keys())
+        current_keys = set()
+        records = []
+        for season in sorted(season_numbers):
+            key = self._watchlist_key(tmdbid, season)
+            current_keys.add(key)
+            sinfo = issues.get(str(season)) or {}
+            collected = collected_by_season.get(season) or []
+            total = int(sinfo.get("episode_total") or (max(collected) if collected else 0))
+            known = list(range(1, total + 1)) if sinfo else list(collected)
+            record = build_season_record(
+                tmdb_id=tmdbid,
+                title=title,
+                season=season,
+                total_episodes=total,
+                collected_episodes=collected,
+                aired_episode_numbers=known,
+                previous=watchlist.get(key),
+            )
+            # Preserve the exact filtered missing list already calculated from TMDB air dates.
+            if sinfo:
+                record["missing_episodes"] = sorted(int(ep) for ep in (sinfo.get("episode_no_exist") or []))
+                if record["missing_episodes"] and record.get("season_state") not in {"queued", "failed"}:
+                    record["season_state"] = "backfill_needed" if not collected else "missing"
+            watchlist[key] = record
+            records.append(record)
+        prefix = f"{tmdbid}:S"
+        for key in list(watchlist):
+            if key.startswith(prefix) and key not in current_keys:
+                del watchlist[key]
+        self._watchlist_save(watchlist)
+        return records
+
+    def _watchlist_should_attempt(self, tv_info: TvNoExistInfo) -> bool:
+        watchlist = self._watchlist_load()
+        tmdbid = int(tv_info.get("tmdbid") or 0)
+        for season in (tv_info.get("season_episode_no_exist_info") or {}):
+            record = watchlist.get(self._watchlist_key(tmdbid, int(season)))
+            if record and should_attempt(record, retry_hours=self._retry_hours):
+                return True
+        return False
+
+    def _watchlist_mark_attempt(self, tv_info: TvNoExistInfo, success: bool, error: str = "") -> None:
+        watchlist = self._watchlist_load()
+        tmdbid = int(tv_info.get("tmdbid") or 0)
+        for season in (tv_info.get("season_episode_no_exist_info") or {}):
+            key = self._watchlist_key(tmdbid, int(season))
+            record = watchlist.get(key)
+            if record:
+                watchlist[key] = mark_attempt(record, success=success, error=error)
+        self._watchlist_save(watchlist)
 
     def _start_service(self):
         """启动服务"""
@@ -412,7 +487,7 @@ class GetMissingEpisodesMod(_PluginBase):
                 {
                     "id": "GetMissingEpisodesMod",
                     "name": f"{self.plugin_name}",
-                    "trigger": CronTrigger.from_crontab("0 8 * * *"),
+                    "trigger": CronTrigger.from_crontab("0 */6 * * *"),
                     "func": self.__refresh,
                     "kwargs": {},
                 }
@@ -632,6 +707,8 @@ class GetMissingEpisodesMod(_PluginBase):
                     is_add_subscribe_success, tv_no_exist_info = self.__get_item_no_exist_info(
                         item_dict, ignored_seasons
                     )
+                    if is_add_subscribe_success and tv_no_exist_info:
+                        self._sync_watchlist(tv_no_exist_info, seasoninfo)
 
                     # 处理结果
                     if is_add_subscribe_success and tv_no_exist_info:
@@ -664,18 +741,32 @@ class GetMissingEpisodesMod(_PluginBase):
                                         tv_no_exist_info=tv_no_exist_info,
                                     )
                             elif self._no_exist_action == NoExistAction.DOWNLOAD.value:
-                                logger.info("开始搜索下载缺失集数")
+                                if not self._watchlist_should_attempt(tv_no_exist_info):
+                                    logger.info(f"【{item_title}】缺集已在队列或重试冷却期，等待媒体库入库确认")
+                                    __append_history(
+                                        item_unique_flag=item_unique_flag,
+                                        exist_status=HistoryStatus.NO_EXIST,
+                                        tv_no_exist_info=tv_no_exist_info,
+                                    )
+                                    continue
+                                logger.info("开始按缺失集号精确搜索下载")
                                 success = self._download_by_tv_no_exist_info(
                                     tv_no_exist_info, item_unique_flag
                                 )
+                                self._watchlist_mark_attempt(
+                                    tv_no_exist_info,
+                                    success=success,
+                                    error="未搜索到覆盖全部缺集的资源" if not success else "",
+                                )
                                 if success:
+                                    # OneSRM 语义：下载任务发出后是 queued；只有下次 Emby 扫描确认入库才算完成。
                                     __append_history(
                                         item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.ALL_EXIST,
+                                        exist_status=HistoryStatus.DOWNLOADED,
                                         tv_no_exist_info=tv_no_exist_info,
                                     )
                                 else:
-                                    logger.warning(f"下载【{tv_no_exist_info.get('title')}】缺失集失败, 仅记录缺失集数")
+                                    logger.warning(f"下载【{tv_no_exist_info.get('title')}】缺失集失败，进入重试冷却")
                                     __append_history(
                                         item_unique_flag=item_unique_flag,
                                         exist_status=HistoryStatus.NO_EXIST,
@@ -1018,6 +1109,8 @@ class GetMissingEpisodesMod(_PluginBase):
             "onlyonce": self._onlyonce,
             "clear": self._clear,
             "only_season_exist": self._only_season_exist,
+            "onestrm_mode": self._onestrm_mode,
+            "retry_hours": str(self._retry_hours),
             "only_aired": self._only_aired,
             "no_exist_action": self._no_exist_action,
             "save_path_replaces": "\n".join(map(str, self._save_path_replaces)),
@@ -1486,6 +1579,20 @@ class GetMissingEpisodesMod(_PluginBase):
                                 "props": {"cols": 12, "md": 4},
                                 "content": [
                                     {
+                                        "component": "VTextField",
+                                        "props": {
+                                            "model": "retry_hours",
+                                            "label": "失败/排队复核间隔(小时)",
+                                            "hint": "下载任务发出后先标记已入队；到期仍未入库才重新搜索，默认24小时",
+                                        },
+                                    }
+                                ],
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [
+                                    {
                                         "component": "VSwitch",
                                         "props": {
                                             "model": "include_s00_season",
@@ -1792,6 +1899,7 @@ class GetMissingEpisodesMod(_PluginBase):
             "onlyonce": False,
             "only_season_exist": True,
             "onestrm_mode": True,
+            "retry_hours": "24",
             "only_aired": True,
             "auto_skip_finished": False,
             "include_s00_season": False,
@@ -2279,6 +2387,7 @@ class GetMissingEpisodesMod(_PluginBase):
         historys_fail_total,
         historys_all_exist_total,
         historys_added_rss_total,
+        historys_downloaded_total,
         history_not_all_no_exist_total,
         historys_skipped_total,
         historys_finished_total,
@@ -2325,6 +2434,12 @@ class GetMissingEpisodesMod(_PluginBase):
                 "value": f"{historys_all_exist_total}部",
                 "icon_name": Icons.GLASSES,
                 "history_type": HistoryDataType.ALL_EXIST.value,
+            },
+            {
+                "title": "已入队",
+                "value": f"{historys_downloaded_total}部",
+                "icon_name": Icons.ADD_SCHEDULE,
+                "history_type": HistoryDataType.DOWNLOADED.value,
             },
             {
                 "title": "已订阅",
@@ -2395,6 +2510,7 @@ class GetMissingEpisodesMod(_PluginBase):
         history_failed: List[ExtendedHistoryDetail] = []
         history_all_exist: List[ExtendedHistoryDetail] = []
         history_added_rss: List[ExtendedHistoryDetail] = []
+        history_downloaded: List[ExtendedHistoryDetail] = []
         history_no_exist: List[ExtendedHistoryDetail] = []
         history_all: List[ExtendedHistoryDetail] = []
         history_skipped: List[ExtendedHistoryDetail] = []
@@ -2404,6 +2520,7 @@ class GetMissingEpisodesMod(_PluginBase):
         status_to_list = {
             HistoryStatus.FAILED.value: history_failed,
             HistoryStatus.ADDED_RSS.value: history_added_rss,
+            HistoryStatus.DOWNLOADED.value: history_downloaded,
             HistoryStatus.ALL_EXIST.value: history_all_exist,
             HistoryStatus.NO_EXIST.value: history_no_exist,
         }
@@ -2432,6 +2549,7 @@ class GetMissingEpisodesMod(_PluginBase):
         sort_by_last_check(history_failed)
         sort_by_last_check(history_all_exist)
         sort_by_last_check(history_added_rss)
+        sort_by_last_check(history_downloaded)
         sort_by_last_check(history_no_exist)
         sort_by_last_check(history_skipped)
         sort_by_last_check(history_finished)
@@ -2445,6 +2563,7 @@ class GetMissingEpisodesMod(_PluginBase):
         history_type_to_list = {
             HistoryDataType.FAILED.value: history_failed,
             HistoryDataType.ADDED_RSS.value: history_added_rss,
+            HistoryDataType.DOWNLOADED.value: history_downloaded,
             HistoryDataType.ALL_EXIST.value: history_all_exist,
             HistoryDataType.NO_EXIST.value: history_no_exist,
             HistoryDataType.SKIPPED.value: history_skipped,
@@ -2489,6 +2608,7 @@ class GetMissingEpisodesMod(_PluginBase):
         historys_no_exist_total = len(history_no_exist)
         historys_fail_total = len(history_failed)
         historys_added_rss_total = len(history_added_rss)
+        historys_downloaded_total = len(history_downloaded)
         historys_all_exist_total = len(history_all_exist)
         historys_skipped_total = len(history_skipped)
         history_not_all_no_exist_total = len(history_not_all_no_exist)
@@ -2500,16 +2620,36 @@ class GetMissingEpisodesMod(_PluginBase):
             historys_fail_total=historys_fail_total,
             historys_all_exist_total=historys_all_exist_total,
             historys_added_rss_total=historys_added_rss_total,
+            historys_downloaded_total=historys_downloaded_total,
             history_not_all_no_exist_total=history_not_all_no_exist_total,
             historys_skipped_total=historys_skipped_total,
             historys_finished_total=historys_finished_total,
         )
+
+        # OneSRM 风格逐季状态摘要
+        watchlist = self._watchlist_load()
+        state_counts = {state: 0 for state in ("missing", "backfill_needed", "queued", "failed", "ok")}
+        missing_total = 0
+        for record in watchlist.values():
+            state = record.get("season_state", "ok")
+            state_counts[state] = state_counts.get(state, 0) + 1
+            missing_total += len(record.get("missing_episodes") or [])
+        watchlist_summary = {
+            "component": "VAlert",
+            "props": {"type": "info", "variant": "tonal", "class": "mb-4"},
+            "text": (
+                f"OneSRM 精确查漏：缺失 {missing_total} 集｜待补季 {state_counts.get('backfill_needed', 0)}｜"
+                f"缺集季 {state_counts.get('missing', 0)}｜已入队 {state_counts.get('queued', 0)}｜"
+                f"失败待重试 {state_counts.get('failed', 0)}｜正常 {state_counts.get('ok', 0)}"
+            ),
+        }
 
         # 拼装页面
         return [
             {
                 "component": "div",
                 "content": [
+                    watchlist_summary,
                     historys_statistics_content,
                     historys_posts_content,
                 ],
@@ -2586,7 +2726,7 @@ class GetMissingEpisodesMod(_PluginBase):
 
     def _download_missing_episodes(self, tmdbid: int, title: str, no_exists: Dict, save_path: str = None) -> bool:
         """对单部剧集的缺失季逐季搜索批量下载，返回是否全部成功/无需下载。"""
-        if self._search_cloud_resources(
+        if not self._onestrm_mode and self._search_cloud_resources(
             title=title,
             media_type=str(no_exists.get("type") or ""),
             season=int(no_exists.get("season") or 0),

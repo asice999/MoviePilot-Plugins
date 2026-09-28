@@ -1,38 +1,4 @@
 {
- "AutoSignInMod": {
-  "name": "自动签到魔改版",
-  "description": "魔改版：自动模拟登录、签到站点。支持浏览器登录凭据（最多5组）与登录后Cookie自动刷新。登录表显示总时魔/等级/分享率/最近动向，签到表显示当日奖励。",
-  "labels": "签到,站点,Cookie,自动登录",
-  "version": "2.9.8",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/autosigninmod.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v2.9.8": "修复登录通知最近动向NameError（__login_meta静态方法内调用name-mangling）；登录表补全最近动向",
-   "v2.9.6": "详情页新增签到失败站点重试按钮与按日奖励展示",
-   "v2.9.5": "签到奖励提取（魔力值/积分/猫粮等），全站签到状态显示具体收获",
-   "v2.9.7": "登录表新增总时魔/等级/分享率列；签到奖励优先提取「签到已得X」；修复做种积分误报签到奖励"
-  }
- },
- "CloudSubscribe": {
-  "name": "网盘订阅助手（自用）",
-  "description": "MoviePilot V3 插件：网盘订阅、搜索、洗版、转存与卡死种子清理。",
-  "labels": "网盘,订阅,搜索,洗版,Emby",
-  "version": "1.4.0",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/cloudsubscribe.png",
-  "author": "asice999",
-  "level": 1,
-  "release": true,
-  "system_version": ">=3.0.0",
-  "history": {
-   "v1.4.0": "插件私有离线 wheelhouse + vendor 自恢复；更新容器或换机后可直接离线补装依赖，避免系统环境缺包导致加载失败。",
-   "v1.3.3": "移除运行时依赖清单，避免启动期依赖安装检查；保留本地/在线切换兼容。",
-   "v1.3.2": "统一云端/本地身份逻辑，避免市场回退覆盖；依赖约束改为与现有环境兼容",
-   "v1.3.1": "115 客户端升级：支持 MP 配置 Token 复用与 Cookie 多客户端路由（P115ClientRouter），提升识别与播放稳定性",
-   "v1.3.0": "整理为 V3 仓库结构，保留原有功能。"
-  }
- },
  "GetMissingEpisodesMod": {
   "name": "剧集管家·下载补齐自用版",
   "description": "检测指定剧集库，对有新季或存在集缺失的剧集自动订阅或搜索下载补全。合并缺失剧集补齐能力：搜索规则组/黑名单/卡死种子检测/未来集订阅池。",
@@ -61,41 +27,6 @@
    "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
    "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
    "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
-  }
- },
- "SiteStatistic": {
-  "name": "站点数据统计（自用）",
-  "description": "自用：站点统计数据图表。",
-  "labels": "统计,站点,仪表板",
-  "version": "1.9.2",
-  "icon": "statistic.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v1.9.2": "自用版：基于 MP 内置 v1.9.2，作者改为 asice999。"
-  }
- },
- "nodeseeksign": {
-  "name": "NodeSeek论坛签到",
-  "description": "懒羊羊定制：自动完成NodeSeek论坛每日签到，支持随机奖励和自动重试功能",
-  "labels": "签到,NodeSeek,论坛",
-  "version": "2.1.2",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/nodeseeksign.png",
-  "author": "asice999",
-  "level": 2,
-  "v2": true,
-  "history": {
-   "v2.1.2": "同步作者为自用，图标指向自建仓库，升级版本号。",
-   "v2.1.1": "移除运行时依赖清单并同步版本，避免启动期依赖检查干扰。",
-   "v2.1.0": "修复统计与通知：仅统计成功记录；已签到显示今日奖励与排名；签到记录解析更稳健",
-   "v2.0.0": "重构签到：时间验证兜底；始终拉取用户与奖励；简化解析；新增近N天收益统计；修复cloudscraper初始化",
-   "v1.6.0": "增加时间验证，规避签到成功但返回非JSON的情况",
-   "v1.5.0": "增强签到成功判断逻辑，规避签到成功但返回非JSON的情况",
-   "v1.4.0": "修复响应解析问题：优化非JSON响应处理、过滤NUL字符、增强签到成功判断逻辑优化业务语义解析",
-   "v1.3.0": "稳定性优化：新增统一请求适配(优先cloudscraper→curl_cffi→requests)、强制代理注入、随机延迟、完善请求头；支持成员ID，通知与页面展示用户信息(含头像)",
-   "v1.2.0": "尝试优化成功率，未测试",
-   "v1.0.0": "支持API方式签到，绕过CloudFlare防护，支持随机奖励和自动加鸡腿"
   }
  }
 }

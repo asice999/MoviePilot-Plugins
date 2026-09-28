@@ -214,7 +214,7 @@ class GetMissingEpisodesMod(_PluginBase):
     _clearflag: bool = False
     _only_season_exist: bool = True
     _only_aired: bool = True
-    _no_exist_action: str = NoExistAction.ONLY_HISTORY.value
+    _no_exist_action: str = NoExistAction.DOWNLOAD.value
     _save_path_replaces: List[str] = []
     _whitelist_librarys: List[str] = []
     _whitelist_media_servers: List[str] = []
@@ -1781,7 +1781,7 @@ class GetMissingEpisodesMod(_PluginBase):
             "auto_skip_finished": False,
             "include_s00_season": False,
             "clear": False,
-            "no_exist_action": NoExistAction.ONLY_HISTORY.value,
+            "no_exist_action": NoExistAction.DOWNLOAD.value,
             "auto_download": False,
             "use_subscribe_rules": True,
             "notify": True,

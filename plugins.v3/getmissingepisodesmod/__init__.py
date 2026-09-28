@@ -863,22 +863,17 @@ class GetMissingEpisodesMod(_PluginBase):
                     if not filted_episodes:
                         logger.debug(f"【{title}】第【{season}】季未获取到TMDB集数信息, 跳过")
                         continue
-                        
+
                     # 该季总集数（筛选后的）
                     episode_total = len(filted_episodes)
-                    
+
                     # 获取实际总集数
                     episode_total_unfiltered = self.__get_total_episodes_unfiltered(tmdbid, season)
 
                     # 该季已存在的集
                     exist_episode = exist_season_info.get(season)
                     logger.debug(f"【{title}】第【{season}】季在媒体库已存在的集数信息: {exist_episode}")
-                    
-                    # 判断用户是否已经添加订阅
-                    if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
-                        logger.info(f"【{title}】第【{season}】季已存在订阅, 跳过")
-                        continue
-                        
+
                     if exist_episode:
                         logger.debug(f"查找【{title}】第【{season}】季缺失集集数")
                         # 按TMDB集数查找缺失集
@@ -887,6 +882,10 @@ class GetMissingEpisodesMod(_PluginBase):
                         if not lack_episode:
                             logger.debug(f"【{title}】第【{season}】季全部集存在")
                             continue
+
+                        # 已存在订阅：仅当整季无缺时才跳过；部分缺失仍需检测（原逻辑误判「已订阅=已下齐」）
+                        if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
+                            logger.info(f"【{title}】第【{season}】季已存在订阅，但媒体库存在 {len(lack_episode)} 集缺失，继续检测")
 
                         # 添加不存在的季集信息
                         __append_season_info(

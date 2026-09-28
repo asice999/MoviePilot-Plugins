@@ -7,7 +7,6 @@
   "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
   "author": "asice999",
   "level": 2,
-  "v2": true,
   "history": {
    "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知"
   }

@@ -26,7 +26,7 @@ from app.domain.meta.metabase import MetaBase
 from app.core.plugin import PluginManager
 from app.schemas.mediaserver import NotExistMediaInfo
 from app.schemas.media import build_media_key
-from .episode_gap import calculate_missing_episodes
+from .episode_gap import calculate_missing_episodes, merge_seasoninfo_views, normalize_title, same_show_year, show_key
 from .onestrm_backfill import build_season_record, mark_attempt, should_attempt
 from uuid import uuid4
 
@@ -191,7 +191,7 @@ class GetMissingEpisodesMod(_PluginBase):
     plugin_name = "OneSRM 剧集查漏·自动补齐"
     plugin_desc = "按 OneSRM 规则逐季逐集扫描媒体库，自动搜索下载缺失剧集"
     plugin_icon = "https://raw.githubusercontent.com/andyxu8023/MoviePilot-Plugins/main/icons/EpisodeNoExist.png"
-    plugin_version = "4.0.0"
+    plugin_version = "4.0.1"
     plugin_author = "boeto，左岸"
     author_url = "https://github.com/andyxu8023"
     plugin_config_prefix = "getmissingepisodes_"
@@ -619,6 +619,9 @@ class GetMissingEpisodesMod(_PluginBase):
         details = history_data.get("details", {})
         logger.debug(f"历史记录数量: {len(details)}")
 
+        # 本次扫描收集到的待处理条目（先收集后聚合，见下方聚合段）
+        candidates: List[Dict[str, Any]] = []
+
         # 遍历媒体服务器
         for mediaserver in mediaservers:
             if not mediaserver:
@@ -715,98 +718,138 @@ class GetMissingEpisodesMod(_PluginBase):
                     item_dict["tmdbid"] = _item_tmdbid
                     logger.debug(f"获到媒体库【{item_title}】数据：{item_dict}")
 
-                    # 获取缺失集数信息，传入忽略季列表
-                    is_add_subscribe_success, tv_no_exist_info = self.__get_item_no_exist_info(
-                        item_dict, ignored_seasons
-                    )
-                    if is_add_subscribe_success and tv_no_exist_info:
-                        self._sync_watchlist(tv_no_exist_info, seasoninfo)
+                    # 先收集，扫描全部媒体服务器后再统一计算缺失（见下方聚合段）
+                    candidates.append({
+                        "mediaserver": mediaserver,
+                        "library_name": library.name,
+                        "item_title": item_title,
+                        "item_unique_flag": item_unique_flag,
+                        "ignored_seasons": ignored_seasons,
+                        "item_dict": item_dict,
+                        "seasoninfo": seasoninfo,
+                    })
 
-                    # 处理结果
-                    if is_add_subscribe_success and tv_no_exist_info:
-                        if not tv_no_exist_info.get("season_episode_no_exist_info"):
-                            logger.info(f"【{item_title}】所有季集均已存在/订阅")
+                logger.info(f"{mediaserver} 媒体库 {library.name} 获取数据完成")
+
+        # 按 标题+年份 聚合同一部剧的多个条目（TMDB 重复条目 / 多服务器重复登记），
+        # 缺失集计算改用各条目已收集集的并集：任一条目已有的集视为已收集，
+        # 避免重复条目各自只看到自己的集数而误报缺失、反复建订阅。
+        grouped: Dict[str, List[Dict[Any, Any]]] = {}
+        for cand in candidates:
+            key = show_key(
+                cand["item_dict"].get("title") or cand["item_dict"].get("original_title"),
+                cand["item_dict"].get("year"),
+            )
+            grouped.setdefault(key, []).append(cand["seasoninfo"])
+        merged_views = {
+            key: merge_seasoninfo_views(views) for key, views in grouped.items()
+        }
+
+        for cand in candidates:
+            item_title = cand["item_title"]
+            item_unique_flag = cand["item_unique_flag"]
+            ignored_seasons = cand["ignored_seasons"]
+            item_dict = cand["item_dict"]
+            seasoninfo = merged_views.get(
+                show_key(
+                    item_dict.get("title") or item_dict.get("original_title"),
+                    item_dict.get("year"),
+                ),
+                cand["seasoninfo"],
+            )
+            item_dict["seasoninfo"] = seasoninfo
+            logger.debug(f"【{item_title}】聚合后已收集季集：{seasoninfo}")
+
+            # 获取缺失集数信息，传入忽略季列表
+            is_add_subscribe_success, tv_no_exist_info = self.__get_item_no_exist_info(
+                item_dict, ignored_seasons
+            )
+            if is_add_subscribe_success and tv_no_exist_info:
+                self._sync_watchlist(tv_no_exist_info, seasoninfo)
+
+            # 处理结果
+            if is_add_subscribe_success and tv_no_exist_info:
+                if not tv_no_exist_info.get("season_episode_no_exist_info"):
+                    logger.info(f"【{item_title}】所有季集均已存在/订阅")
+                    __append_history(
+                        item_unique_flag=item_unique_flag,
+                        exist_status=HistoryStatus.ALL_EXIST,
+                        tv_no_exist_info=tv_no_exist_info,
+                    )
+                else:
+                    logger.info(f"【{item_title}】缺失集数信息：{tv_no_exist_info}")
+
+                    if self._no_exist_action == NoExistAction.ADD_SUBSCRIBE.value:
+                        logger.info("开始订阅缺失集数")
+                        is_add_subscribe_success = self.__add_subscribe_by_tv_no_exist_info(
+                            tv_no_exist_info, item_unique_flag
+                        )
+                        if is_add_subscribe_success:
                             __append_history(
                                 item_unique_flag=item_unique_flag,
-                                exist_status=HistoryStatus.ALL_EXIST,
+                                exist_status=HistoryStatus.ADDED_RSS,
                                 tv_no_exist_info=tv_no_exist_info,
                             )
                         else:
-                            logger.info(f"【{item_title}】缺失集数信息：{tv_no_exist_info}")
-
-                            if self._no_exist_action == NoExistAction.ADD_SUBSCRIBE.value:
-                                logger.info("开始订阅缺失集数")
-                                is_add_subscribe_success = self.__add_subscribe_by_tv_no_exist_info(
-                                    tv_no_exist_info, item_unique_flag
-                                )
-                                if is_add_subscribe_success:
-                                    __append_history(
-                                        item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.ADDED_RSS,
-                                        tv_no_exist_info=tv_no_exist_info,
-                                    )
-                                else:
-                                    logger.warning(f"订阅【{item_title}】失败, 仅记录缺失集数")
-                                    __append_history(
-                                        item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.NO_EXIST,
-                                        tv_no_exist_info=tv_no_exist_info,
-                                    )
-                            elif self._no_exist_action == NoExistAction.DOWNLOAD.value:
-                                if not self._watchlist_should_attempt(tv_no_exist_info):
-                                    logger.info(f"【{item_title}】缺集已在队列或重试冷却期，等待媒体库入库确认")
-                                    __append_history(
-                                        item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.NO_EXIST,
-                                        tv_no_exist_info=tv_no_exist_info,
-                                    )
-                                    continue
-                                logger.info("开始按缺失集号精确搜索下载")
-                                success = self._download_by_tv_no_exist_info(
-                                    tv_no_exist_info, item_unique_flag
-                                )
-                                self._watchlist_mark_attempt(
-                                    tv_no_exist_info,
-                                    success=success,
-                                    error="未搜索到覆盖全部缺集的资源" if not success else "",
-                                )
-                                if success:
-                                    # OneSRM 语义：下载任务发出后是 queued；只有下次 Emby 扫描确认入库才算完成。
-                                    __append_history(
-                                        item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.DOWNLOADED,
-                                        tv_no_exist_info=tv_no_exist_info,
-                                    )
-                                else:
-                                    logger.warning(f"下载【{tv_no_exist_info.get('title')}】缺失集失败，进入重试冷却")
-                                    __append_history(
-                                        item_unique_flag=item_unique_flag,
-                                        exist_status=HistoryStatus.NO_EXIST,
-                                        tv_no_exist_info=tv_no_exist_info,
-                                    )
-                            elif self._no_exist_action == NoExistAction.SET_ALL_EXIST.value:
-                                logger.debug("将缺失季集标记为存在")
-                                __append_history(
-                                    item_unique_flag=item_unique_flag,
-                                    exist_status=HistoryStatus.ALL_EXIST,
-                                    tv_no_exist_info=tv_no_exist_info,
-                                )
-                            else:
-                                logger.debug("仅记录缺失集数")
-                                __append_history(
-                                    item_unique_flag=item_unique_flag,
-                                    exist_status=HistoryStatus.NO_EXIST,
-                                    tv_no_exist_info=tv_no_exist_info,
-                                )
-                    else:
-                        logger.warning(f"【{item_title}】获取缺失集数信息失败")
+                            logger.warning(f"订阅【{item_title}】失败, 仅记录缺失集数")
+                            __append_history(
+                                item_unique_flag=item_unique_flag,
+                                exist_status=HistoryStatus.NO_EXIST,
+                                tv_no_exist_info=tv_no_exist_info,
+                            )
+                    elif self._no_exist_action == NoExistAction.DOWNLOAD.value:
+                        if not self._watchlist_should_attempt(tv_no_exist_info):
+                            logger.info(f"【{item_title}】缺集已在队列或重试冷却期，等待媒体库入库确认")
+                            __append_history(
+                                item_unique_flag=item_unique_flag,
+                                exist_status=HistoryStatus.NO_EXIST,
+                                tv_no_exist_info=tv_no_exist_info,
+                            )
+                            continue
+                        logger.info("开始按缺失集号精确搜索下载")
+                        success = self._download_by_tv_no_exist_info(
+                            tv_no_exist_info, item_unique_flag
+                        )
+                        self._watchlist_mark_attempt(
+                            tv_no_exist_info,
+                            success=success,
+                            error="未搜索到覆盖全部缺集的资源" if not success else "",
+                        )
+                        if success:
+                            # OneSRM 语义：下载任务发出后是 queued；只有下次 Emby 扫描确认入库才算完成。
+                            __append_history(
+                                item_unique_flag=item_unique_flag,
+                                exist_status=HistoryStatus.DOWNLOADED,
+                                tv_no_exist_info=tv_no_exist_info,
+                            )
+                        else:
+                            logger.warning(f"下载【{tv_no_exist_info.get('title')}】缺失集失败，进入重试冷却")
+                            __append_history(
+                                item_unique_flag=item_unique_flag,
+                                exist_status=HistoryStatus.NO_EXIST,
+                                tv_no_exist_info=tv_no_exist_info,
+                            )
+                    elif self._no_exist_action == NoExistAction.SET_ALL_EXIST.value:
+                        logger.debug("将缺失季集标记为存在")
                         __append_history(
                             item_unique_flag=item_unique_flag,
-                            exist_status=HistoryStatus.FAILED,
+                            exist_status=HistoryStatus.ALL_EXIST,
                             tv_no_exist_info=tv_no_exist_info,
                         )
-
-                logger.info(f"{mediaserver} 媒体库 {library.name} 获取数据完成")
+                    else:
+                        logger.debug("仅记录缺失集数")
+                        __append_history(
+                            item_unique_flag=item_unique_flag,
+                            exist_status=HistoryStatus.NO_EXIST,
+                            tv_no_exist_info=tv_no_exist_info,
+                        )
+            else:
+                logger.warning(f"【{item_title}】获取缺失集数信息失败")
+                __append_history(
+                    item_unique_flag=item_unique_flag,
+                    exist_status=HistoryStatus.FAILED,
+                    tv_no_exist_info=tv_no_exist_info,
+                )
 
         logger.info(f"媒体库缺失集数据获取完成, 已处理媒体数量: {item_count}")
         
@@ -1164,6 +1207,30 @@ class GetMissingEpisodesMod(_PluginBase):
             logger.warning(f"unique: {unique} 不在历史记录里")
             return False, historys
 
+    def __subscription_exists_by_title(self, title: str, year: object, season: object) -> bool:
+        """按标题+年份+季跨 tmdbid 查重。
+
+        TMDB 存在同名重复条目（不同 tmdbid），仅按 media_id 查重会让同一部剧
+        被建出多条订阅并各自反复触发下载。标题比较用 normalize_title 归一化；
+        年份用 same_show_year 宽松匹配（任一边缺年份不漏判，两边不同年份不误杀）。
+        """
+        try:
+            season_no = int(season)
+            title_key = normalize_title(title)
+            for sub in self._subOper.list():
+                try:
+                    if int(sub.season or 0) != season_no:
+                        continue
+                except (TypeError, ValueError):
+                    continue
+                if normalize_title(getattr(sub, "name", "")) != title_key:
+                    continue
+                if same_show_year(getattr(sub, "year", None), year):
+                    return True
+        except Exception as err:
+            logger.warning(f"按标题查重订阅失败，不影响本次流程: {err}")
+        return False
+
     def __check_and_add_subscribe(
         self,
         title: str,
@@ -1195,6 +1262,11 @@ class GetMissingEpisodesMod(_PluginBase):
         # 判断用户是否已经添加订阅
         if self._subOper.exists(MediaSource.TMDB, str(tmdbid), season=season):
             logger.info(f"{title_season} 订阅已存在")
+            return True
+
+        # TMDB 同名重复条目对应不同 tmdbid：按标题+年份+季再查一次，避免重复订阅
+        if self.__subscription_exists_by_title(title, year, season):
+            logger.info(f"{title_season} 已存在同名同年订阅（不同 TMDB 条目），跳过重复订阅")
             return True
 
         logger.info(f"开始添加订阅: {title_season}")

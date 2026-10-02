@@ -1,35 +1,36 @@
 {
- "GetMissingEpisodesMod": {
-  "name": "OneSRM 剧集查漏·自动补齐",
-  "description": "按 OneSRM 行为逐季逐集扫描媒体库；已有整季订阅也不视为已收齐，自动精确搜索下载中间缺集，并维护缺集、已入队、失败重试状态。",
-  "labels": "剧集,缺失,订阅,下载,补全",
-  "version": "4.0.0",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
-  "author": "asice999",
-  "level": 2,
-  "history": {
-   "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知",
-   "v3.1.1": "修复：媒体库部分集缺失时，因该季已存在订阅而被整季跳过（已订阅≠已下齐）；现改为算完缺失集后再判断",
-   "v3.1.2": "no_exist_action 默认改为 DOWNLOAD：媒体库发现缺失集直接搜下载，绕过 RSS/订阅通道",
-   "v3.2.0": "按 OneSRM 规则逐季逐集查漏：订阅不等于已收集；已订阅季仍计算中间缺集并按 episodes 精确补齐",
-   "v4.0.0": "OneSRM 行为复刻：逐季状态表、缺集/缺季/已入队/失败状态、24小时复核重试、6小时媒体库扫描、自动精确搜索下载"
-  }
- },
- "MetaFiller": {
-  "name": "缺失剧集元数据补全（自用）",
-  "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
-  "labels": "Emby,元数据,刮削,TMDB,缩略图",
-  "version": "1.3.2",
-  "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
-  "author": "asice999",
-  "level": 1,
-  "release": true,
-  "system_version": ">=3.0.0",
-  "history": {
-   "v1.3.2": "修复 __is_placeholder 方法丢失与 __ov_or_placeholder 缺 @staticmethod（扫描 16 部国漫全挂）",
-   "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
-   "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
-   "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
-  }
- }
+    "GetMissingEpisodesMod": {
+        "name": "OneSRM 剧集查漏·自动补齐",
+        "description": "按 OneSRM 行为逐季逐集扫描媒体库；已有整季订阅也不视为已收齐，自动精确搜索下载中间缺集，并维护缺集、已入队、失败重试状态。",
+        "labels": "剧集,缺失,订阅,下载,补全",
+        "version": "4.0.1",
+        "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/getmissingepisodesmod.png",
+        "author": "asice999",
+        "level": 2,
+        "history": {
+            "v4.0.1": "修复 TMDB 同名重复条目导致的重复订阅与整季重复下载：①缺失集计算改为同名同年多条目已收集集的并集（任一条目已有即视为已收集）②建订阅前按标题+年份+季跨 tmdbid 二次查重；③年份缺省宽松匹配，不误杀不同年份同名剧",
+            "v3.1.0": "首次自用发版：合并缺失剧集补齐能力，新增「搜索下载」补全方式，含搜索规则组/黑名单/卡死检测/下载完成通知",
+            "v3.1.1": "修复：媒体库部分集缺失时，因该季已存在订阅而被整季跳过（已订阅≠已下齐）；现改为算完缺失集后再判断",
+            "v3.1.2": "no_exist_action 默认改为 DOWNLOAD：媒体库发现缺失集直接搜下载，绕过 RSS/订阅通道",
+            "v3.2.0": "按 OneSRM 规则逐季逐集查漏：订阅不等于已收集；已订阅季仍计算中间缺集并按 episodes 精确补齐",
+            "v4.0.0": "OneSRM 行为复刻：逐季状态表、缺集/缺季/已入队/失败状态、24小时复核重试、6小时媒体库扫描、自动精确搜索下载"
+        }
+    },
+    "MetaFiller": {
+        "name": "缺失剧集元数据补全（自用）",
+        "description": "扫描 Emby 剧集库，自动补全缺失的分集标题、简介与缩略图。TMDB 中文优先，电视猫/央视网回退；支持预览、断点续跑、指定剧处理与历史报告。",
+        "labels": "Emby,元数据,刮削,TMDB,缩略图",
+        "version": "1.3.2",
+        "icon": "https://raw.githubusercontent.com/asice999/MoviePilot-Plugins/main/icons/metafiller.png",
+        "author": "asice999",
+        "level": 1,
+        "release": true,
+        "system_version": ">=3.0.0",
+        "history": {
+            "v1.3.2": "修复 __is_placeholder 方法丢失与 __ov_or_placeholder 缺 @staticmethod（扫描 16 部国漫全挂）",
+            "v1.3.1": "修复类字段 dry_run 缺失导致运行异常；新增中文源优先开关（电视猫优先）",
+            "v1.0.0": "首个版本：TMDB/电视猫/央视网三源回退，支持分类筛选与覆盖开关",
+            "v1.1.0": "新增预览模式、指定剧处理、断点续跑、历史报告与缩略图补全；强化中文优先匹配与多季保护"
+        }
+    }
 }
